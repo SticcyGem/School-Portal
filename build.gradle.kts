@@ -20,6 +20,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -39,4 +40,17 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+
+    val mockitoAgentPath = configurations.getByName("testRuntimeClasspath")
+        .filter { it.name.contains("byte-buddy-agent") }
+        .single()
+        .absolutePath
+
+    jvmArgs(
+        "-javaagent:$mockitoAgentPath",
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        "-XX:+EnableDynamicAgentLoading",
+        "-Xshare:off"
+    )
 }
