@@ -2,14 +2,12 @@
 -- CREATE VIEWS FOR DATA INSPECTION
 -- Run this as the 'school' user.
 -- =============================================================================
-SET SERVEROUTPUT ON;
-
 -- 1. View: All Users with their Roles
-CREATE OR REPLACE VIEW view_users_roles AS
+CREATE OR REPLACE VIEW view_logins AS
 SELECT 
     a.account_id,
-    a.first_name || ' ' || a.last_name AS full_name,
     a.email,
+    a.password_hash,
     r.role_name
 FROM 
     accounts a
@@ -22,36 +20,40 @@ ORDER BY
 
 -- 2. View: Student Details (with Block and Course)
 CREATE OR REPLACE VIEW view_student_details AS
-SELECT 
+SELECT
+    a.account_id,
+    a.email,
     s.student_no,
     a.first_name || ' ' || a.last_name AS student_name,
     s.student_type,
     s.year_level,
+    b.block_number,
     b.block_name,
     c.course_code
-FROM 
+FROM
     students s
-JOIN 
+JOIN
     accounts a ON s.account_id = a.account_id
-JOIN 
+JOIN
     blocks b ON s.block_id = b.block_id
-JOIN 
+JOIN
     courses c ON b.course_code = c.course_code
-ORDER BY 
+ORDER BY
     s.student_no;
 
 -- 3. View: Professor Details
 CREATE OR REPLACE VIEW view_professor_details AS
-SELECT 
+SELECT
+    a.account_id,
+    a.email,
     p.professor_no,
     a.first_name || ' ' || a.last_name AS professor_name,
-    p.employee_type,
-    a.email
-FROM 
+    p.employee_type
+FROM
     professors p
-JOIN 
+JOIN
     accounts a ON p.account_id = a.account_id
-ORDER BY 
+ORDER BY
     p.professor_no;
 
 -- 4. View: Master Schedule of Classes

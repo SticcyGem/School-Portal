@@ -2,11 +2,11 @@
 -- CHECK VIEWS TABLES
 -- =============================================================================
 
-SELECT * FROM view_users_roles;
-SELECT * FROM view_student_details;
-SELECT * FROM view_professor_details;
-SELECT * FROM view_master_schedule;
-SELECT * FROM view_student_enrollments;
+SELECT * FROM VIEW_LOGINS;
+SELECT * FROM VIEW_STUDENT_DETAILS;
+SELECT * FROM VIEW_PROFESSOR_DETAILS;
+SELECT * FROM VIEW_MASTER_SCHEDULE;
+SELECT * FROM VIEW_STUDENT_ENROLLMENTS;
 
 -- =============================================================================
 -- CHECK BASE TABLES
@@ -32,3 +32,7 @@ SELECT * FROM SEMESTERS;
 SELECT * FROM ACADEMIC_TERMS;
 SELECT * FROM BUILDINGS;
 SELECT * FROM ROOMS;
+
+-- =============================================================================
+-- DROP VIEW / TABLES
+-- =============================================================================

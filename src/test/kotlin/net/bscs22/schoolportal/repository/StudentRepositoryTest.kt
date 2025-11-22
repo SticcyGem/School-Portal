@@ -18,7 +18,7 @@ class StudentRepositoryTest {
 
     @Test
     fun `should find student by student number`() {
-        // 1. Create a student (or use one you know exists from your insert script)
+        // 1. Create a student
         // Assuming 'STU-001' exists from your init script
         val accountId = "STU-001"
 
