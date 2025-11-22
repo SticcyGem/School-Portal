@@ -2,6 +2,7 @@ package net.bscs22.schoolportal
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @SpringBootTest(
     properties = [
@@ -13,6 +14,8 @@ import org.springframework.boot.test.context.SpringBootTest
     ]
 )
 class SchoolPortalApplicationTests {
+    @MockitoBean
+    lateinit var consoleApp: ConsoleApp
 
     @Test
     fun contextLoads() {
