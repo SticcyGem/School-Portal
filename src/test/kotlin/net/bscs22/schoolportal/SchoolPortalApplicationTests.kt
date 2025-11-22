@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 )
 class SchoolPortalApplicationTests {
     @MockitoBean
+    @Suppress("unused")
     lateinit var consoleApp: ConsoleApp
 
     @Test
