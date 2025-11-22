@@ -7,19 +7,7 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 
 @Repository
-/**
- * Repository for accessing professor profile data from the database.
- *
- * This class implements [ProfileRepository] to provide database operations
- * specific to the [ProfessorProfile] model. It uses a JDBC-based approach
- * to map query results into Kotlin data classes.
- *
- * @property jdbcTemplate The Spring JDBC template used for executing SQL queries.
- */
 class ProfessorRepository(private val jdbcTemplate: JdbcTemplate) : ProfileRepository<ProfessorProfile> {
-    /**
-     * Maps rows from the `view_professor_details` view into [ProfessorProfile] objects.
-     */
     private val rowMapper = RowMapper { rs: ResultSet, _ ->
         ProfessorProfile(
             accountId = rs.getString("account_id"),
@@ -30,12 +18,6 @@ class ProfessorRepository(private val jdbcTemplate: JdbcTemplate) : ProfileRepos
         )
     }
 
-    /**
-     * Retrieves a professor profile by account ID.
-     *
-     * @param accountId The unique account identifier.
-     * @return A [ProfessorProfile] if found, or `null` if no record exists.
-     */
     override fun findByAccountId(accountId: String): ProfessorProfile? {
         val sql = """
             SELECT * 
