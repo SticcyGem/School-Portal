@@ -16,7 +16,9 @@ class LoginController(private val authService: AuthService) {
 
     @PostMapping("/login")
     fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
-        val authResult = authService.authenticate(request.email, request.password)
+        val authResult = authService.authenticate(
+            request.email,
+            request.password)
         return if (authResult != null) {
             ResponseEntity.ok(LoginResponse("Login Successful", authResult))
         } else {

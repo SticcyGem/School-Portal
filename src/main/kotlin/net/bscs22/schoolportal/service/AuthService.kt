@@ -1,12 +1,19 @@
 package net.bscs22.schoolportal.service
 
+import net.bscs22.schoolportal.model.Accounts
+import net.bscs22.schoolportal.model.UserProfiles
+import net.bscs22.schoolportal.repository.AccountRepository
 import net.bscs22.schoolportal.repository.LoginRepository
+import net.bscs22.schoolportal.repository.UserProfileRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AuthService(
     private val loginRepository: LoginRepository,
+    private val accountRepository: AccountRepository,
+    private val userProfileRepository: UserProfileRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
 ) {
@@ -32,7 +39,37 @@ class AuthService(
                 "role" to roleName
             )
         }
-
         return null
+    }
+
+    @Transactional
+    fun registerAdmin(email: String, rawPassword: String, firstName: String, lastName: String): String {
+        // 1. Check if email exists
+        if (accountRepository.existsByEmail(email)) {
+            throw IllegalArgumentException("Email already in use")
+        }
+
+        // 2. Create Account
+        val newAccount = Accounts(
+            email = email,
+            passwordHash = passwordEncoder.encode(rawPassword)
+        )
+        val savedAccount = accountRepository.save(newAccount)
+
+        // 3. Create Profile
+        val profile = UserProfiles(
+            accountId = savedAccount.accountId,
+            firstName = firstName,
+            lastName = lastName
+        )
+        userProfileRepository.save(profile)
+
+        // 4. Assign Role (3 = ADMIN)
+        // Ensure accountId is not null (it shouldn't be after save)
+        savedAccount.accountId.let { id ->
+            accountRepository.addRole(id, 3L)
+        }
+
+        return "Admin account created successfully for ${savedAccount.email}"
     }
 }
