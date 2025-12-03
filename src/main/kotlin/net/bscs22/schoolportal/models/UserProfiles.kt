@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.model
+package net.bscs22.schoolportal.models
 
 import jakarta.persistence.*
 import java.util.UUID

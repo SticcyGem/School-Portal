@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.service
+package net.bscs22.schoolportal.services
 
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts

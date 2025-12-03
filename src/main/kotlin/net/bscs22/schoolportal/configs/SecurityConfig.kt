@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.config
+package net.bscs22.schoolportal.configs
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

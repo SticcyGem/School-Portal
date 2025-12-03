@@ -1,6 +1,6 @@
-package net.bscs22.schoolportal.config
+package net.bscs22.schoolportal.configs
 
-import net.bscs22.schoolportal.repository.LoginRepository
+import net.bscs22.schoolportal.repositories.LoginRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationProvider

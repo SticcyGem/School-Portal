@@ -1,6 +1,6 @@
-package net.bscs22.schoolportal.controller
+package net.bscs22.schoolportal.controllers
 
-import net.bscs22.schoolportal.service.AuthService
+import net.bscs22.schoolportal.services.AuthService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody

@@ -1,6 +1,6 @@
-package net.bscs22.schoolportal.repository
+package net.bscs22.schoolportal.repositories
 
-import net.bscs22.schoolportal.model.Accounts
+import net.bscs22.schoolportal.models.Accounts
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query

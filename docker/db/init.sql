@@ -6,15 +6,15 @@ CREATE SCHEMA IF NOT EXISTS school;
 -- =============================================================================
 CREATE TYPE school.account_status AS 
         ENUM ('Active','Inactive');
-CREATE TYPE school.auth_provider_type AS 
+CREATE TYPE school.auth_provider_enum AS
         ENUM ('Local','Microsoft');
-CREATE TYPE school.student_status_type AS 
+CREATE TYPE school.student_status_enum AS
         ENUM ('Admitted','Enrolled','LeaveOfAbsence','Dropped','Graduated');
-CREATE TYPE school.education_level_type AS 
+CREATE TYPE school.education_level_enum AS
         ENUM ('Undergraduate','Graduate');
 CREATE TYPE school.student_type_enum AS 
         ENUM ('Regular','Irregular');
-CREATE TYPE school.professor_status_type AS 
+CREATE TYPE school.professor_status_enum AS
         ENUM ('Active','OnLeave','Resigned','Terminated');
 CREATE TYPE school.employee_type_enum AS
         ENUM ('FullTime','PartTime');
@@ -30,7 +30,7 @@ CREATE TABLE school.accounts (
         , status                          school.account_status         NOT NULL DEFAULT 'Active'
         , email                           VARCHAR(255)                  NOT NULL UNIQUE
         , password_hash                   VARCHAR(255)                      NULL
-        , auth_provider                   school.auth_provider_type     NOT NULL DEFAULT 'Local'
+        , auth_provider                   school.auth_provider_enum     NOT NULL DEFAULT 'Local'
         , auth_provider_id                VARCHAR(255)                      NULL
         , created_at                      TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
         , PRIMARY KEY (account_id)
@@ -63,8 +63,8 @@ CREATE TABLE school.account_roles (
 CREATE TABLE school.students (
         account_id                        UUID                          NOT NULL
         , student_no                      BIGINT                        NOT NULL
-        , student_status                  school.student_status_type    NOT NULL DEFAULT 'Admitted'
-        , education_level                 school.education_level_type   NOT NULL DEFAULT 'Undergraduate'
+        , student_status                  school.student_status_enum    NOT NULL DEFAULT 'Admitted'
+        , education_level                 school.education_level_enum   NOT NULL DEFAULT 'Undergraduate'
         , student_type                    school.student_type_enum      NOT NULL DEFAULT 'Regular'
         , year_level                      BIGINT                        NOT NULL DEFAULT 1
         , student_admitted_at             TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -75,7 +75,7 @@ CREATE TABLE school.students (
 CREATE TABLE school.professors (
         account_id                        UUID                          NOT NULL
         , professor_id                    VARCHAR(10)                   NOT NULL
-        , professor_status                school.professor_status_type  NOT NULL DEFAULT 'Active'
+        , professor_status                school.professor_status_enum  NOT NULL DEFAULT 'Active'
         , employee_type                   school.employee_type_enum     NOT NULL
         , prof_hired_at                   TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
         , PRIMARY KEY (account_id)
@@ -93,7 +93,7 @@ CREATE TABLE school.colleges (
 CREATE TABLE school.courses (
         course_code                       VARCHAR(10)                   NOT NULL
         , course_name                     VARCHAR(100)                  NOT NULL
-        , course_tier                     school.education_level_type   NOT NULL
+        , course_tier                     school.education_level_enum   NOT NULL
         , college_code                    VARCHAR(10)                   NOT NULL
         , PRIMARY KEY (course_code)
 );

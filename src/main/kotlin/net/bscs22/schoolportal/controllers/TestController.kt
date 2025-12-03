@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.controller
+package net.bscs22.schoolportal.controllers
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

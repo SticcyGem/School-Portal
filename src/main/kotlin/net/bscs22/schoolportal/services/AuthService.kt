@@ -1,10 +1,10 @@
-package net.bscs22.schoolportal.service
+package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.model.Accounts
-import net.bscs22.schoolportal.model.UserProfiles
-import net.bscs22.schoolportal.repository.AccountRepository
-import net.bscs22.schoolportal.repository.LoginRepository
-import net.bscs22.schoolportal.repository.UserProfileRepository
+import net.bscs22.schoolportal.models.Accounts
+import net.bscs22.schoolportal.models.UserProfiles
+import net.bscs22.schoolportal.repositories.AccountRepository
+import net.bscs22.schoolportal.repositories.LoginRepository
+import net.bscs22.schoolportal.repositories.UserProfileRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
