@@ -9,11 +9,12 @@ A robust, Spring Boot-based backend system designed for the Information Manageme
 
 **Framework**: Spring Boot 3.5.7
 
-**Database**: Oracle Database 11g XE
+**Database**: PostgreSQL
+
+**Security**: Spring Security with JWT
 
 **Build Tool**: Gradle (Kotlin DSL)
 
-**Testing**: JUnit 5, Mockito, Spring Boot Test
 ## Acknowledgements
 
  - Submitted in partial fulfillment of the requirements for Information Management at Pamantasan ng Lungsod ng Maynila.
