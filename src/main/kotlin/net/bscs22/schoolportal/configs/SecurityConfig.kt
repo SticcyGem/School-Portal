@@ -29,9 +29,10 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 // Public Access
                 auth.requestMatchers("/api/auth/**").permitAll()
+                auth.requestMatchers("/api/test/public").permitAll()
 
-                // TEMPORARY: Allow Admin Registration
-                auth.requestMatchers("/api/admin/**").permitAll()
+                // Admin Access
+                auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 auth.requestMatchers(
                     "/", "/index.html", "/static/**", "/css/**",

@@ -1,6 +1,6 @@
 package net.bscs22.schoolportal.models.enums
 
-enum class StudentType {
+enum class StudentType{
     REGULAR,
     IRREGULAR;
 }

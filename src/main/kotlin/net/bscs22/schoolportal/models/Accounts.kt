@@ -21,12 +21,12 @@ class Accounts (
     var passwordHash: String,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", columnDefinition = "school.account_status")
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    var status: AccountStatus = AccountStatus.Active,
+    @Column(name = "status", columnDefinition = "school.account_status")
+    var status: AccountStatus = AccountStatus.ACTIVE,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "auth_provider", columnDefinition = "school.auth_provider_type")
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    var authProvider: AuthProvider = AuthProvider.Local
+    @Column(name = "auth_provider", columnDefinition = "school.auth_provider_type")
+    var authProvider: AuthProvider = AuthProvider.LOCAL
 )

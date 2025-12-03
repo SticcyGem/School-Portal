@@ -4,22 +4,22 @@ CREATE SCHEMA IF NOT EXISTS school;
 -- =============================================================================
 -- ENUM TYPES
 -- =============================================================================
-CREATE TYPE school.account_status AS 
-        ENUM ('Active','Inactive');
+CREATE TYPE school.account_status AS
+    ENUM ('ACTIVE', 'INACTIVE');
 CREATE TYPE school.auth_provider_enum AS
-        ENUM ('Local','Microsoft');
+    ENUM ('LOCAL', 'MICROSOFT');
 CREATE TYPE school.student_status_enum AS
-        ENUM ('Admitted','Enrolled','LeaveOfAbsence','Dropped','Graduated');
+    ENUM ('ADMITTED', 'ENROLLED', 'LEAVE_OF_ABSENCE', 'DROPPED', 'GRADUATED');
 CREATE TYPE school.education_level_enum AS
-        ENUM ('Undergraduate','Graduate');
-CREATE TYPE school.student_type_enum AS 
-        ENUM ('Regular','Irregular');
+    ENUM ('UNDERGRADUATE', 'GRADUATE');
+CREATE TYPE school.student_type_enum AS
+    ENUM ('REGULAR', 'IRREGULAR');
 CREATE TYPE school.professor_status_enum AS
-        ENUM ('Active','OnLeave','Resigned','Terminated');
+    ENUM ('ACTIVE', 'ON_LEAVE', 'RESIGNED', 'TERMINATED');
 CREATE TYPE school.employee_type_enum AS
-        ENUM ('FullTime','PartTime');
+    ENUM ('FULL_TIME', 'PART_TIME');
 CREATE TYPE school.delivery_mode_enum AS
-        ENUM ('FaceToFace', 'Online', 'Hybrid');
+    ENUM ('FACE_TO_FACE', 'ONLINE', 'HYBRID');
 -- =============================================================================
 -- ENTITY TABLE DEFINITIONS
 -- =============================================================================
@@ -27,10 +27,10 @@ CREATE TYPE school.delivery_mode_enum AS
 --    1. Accounts ✓
 CREATE TABLE school.accounts (
         account_id                        UUID                          NOT NULL DEFAULT gen_random_uuid()
-        , status                          school.account_status         NOT NULL DEFAULT 'Active'
+        , status                          school.account_status         NOT NULL DEFAULT 'ACTIVE'
         , email                           VARCHAR(255)                  NOT NULL UNIQUE
         , password_hash                   VARCHAR(255)                      NULL
-        , auth_provider                   school.auth_provider_enum     NOT NULL DEFAULT 'Local'
+        , auth_provider                   school.auth_provider_enum     NOT NULL DEFAULT 'LOCAL'
         , auth_provider_id                VARCHAR(255)                      NULL
         , created_at                      TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
         , PRIMARY KEY (account_id)
@@ -63,9 +63,9 @@ CREATE TABLE school.account_roles (
 CREATE TABLE school.students (
         account_id                        UUID                          NOT NULL
         , student_no                      BIGINT                        NOT NULL
-        , student_status                  school.student_status_enum    NOT NULL DEFAULT 'Admitted'
-        , education_level                 school.education_level_enum   NOT NULL DEFAULT 'Undergraduate'
-        , student_type                    school.student_type_enum      NOT NULL DEFAULT 'Regular'
+        , student_status                  school.student_status_enum    NOT NULL DEFAULT 'ADMITTED'
+        , education_level                 school.education_level_enum   NOT NULL DEFAULT 'UNDERGRADUATE'
+        , student_type                    school.student_type_enum      NOT NULL DEFAULT 'REGULAR'
         , year_level                      BIGINT                        NOT NULL DEFAULT 1
         , student_admitted_at             TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
         , PRIMARY KEY (account_id)
@@ -75,7 +75,7 @@ CREATE TABLE school.students (
 CREATE TABLE school.professors (
         account_id                        UUID                          NOT NULL
         , professor_id                    VARCHAR(10)                   NOT NULL
-        , professor_status                school.professor_status_enum  NOT NULL DEFAULT 'Active'
+        , professor_status                school.professor_status_enum  NOT NULL DEFAULT 'ACTIVE'
         , employee_type                   school.employee_type_enum     NOT NULL
         , prof_hired_at                   TIMESTAMP                     NOT NULL DEFAULT CURRENT_TIMESTAMP
         , PRIMARY KEY (account_id)

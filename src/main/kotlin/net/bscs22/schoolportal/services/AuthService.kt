@@ -1,9 +1,16 @@
 package net.bscs22.schoolportal.services
 
 import net.bscs22.schoolportal.models.Accounts
+import net.bscs22.schoolportal.models.Professors
+import net.bscs22.schoolportal.models.Students
 import net.bscs22.schoolportal.models.UserProfiles
+import net.bscs22.schoolportal.models.enums.EducationLevel
+import net.bscs22.schoolportal.models.enums.EmployeeType
+import net.bscs22.schoolportal.models.enums.StudentType
 import net.bscs22.schoolportal.repositories.AccountRepository
 import net.bscs22.schoolportal.repositories.LoginRepository
+import net.bscs22.schoolportal.repositories.ProfessorRepository
+import net.bscs22.schoolportal.repositories.StudentRepository
 import net.bscs22.schoolportal.repositories.UserProfileRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -14,14 +21,19 @@ class AuthService(
     private val loginRepository: LoginRepository,
     private val accountRepository: AccountRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val studentRepository: StudentRepository,
+    private val professorRepository: ProfessorRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
 ) {
 
-    fun authenticate(email: String, rawPassword: String): Map<String, Any>? {
+    fun authenticate(
+        email: String,
+        rawPassword: String
+    ): Map<String, Any>? {
         val user = loginRepository.findByEmail(email) ?: return null
 
-        if (user.status != "Active") {
+        if (user.status != "ACTIVE") {
             return null
         }
 
@@ -43,29 +55,84 @@ class AuthService(
     }
 
     @Transactional
-    fun registerAdmin(email: String, rawPassword: String, firstName: String, lastName: String): String {
-        // 1. Check if email exists
+    fun registerStudent(
+        email: String,
+        rawPassword: String,
+        firstName: String,
+        lastName: String,
+        studentNo: Long,
+        educationLevel: EducationLevel,
+        studentType: StudentType
+    ): String {
         if (accountRepository.existsByEmail(email)) {
             throw IllegalArgumentException("Email already in use")
         }
+        if (studentRepository.existsByStudentNo(studentNo)) {
+            throw IllegalArgumentException("Student No already in use")
+        }
+        val account = accountRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
+        studentRepository.save(
+            Students(
+                accountId = account.accountId,
+                studentNo = studentNo,
+                educationLevel = educationLevel,
+                studentType = studentType
+            )
+        )
+        accountRepository.addRole(account.accountId, 1L)
+        return "Student created: $studentNo"
+    }
 
-        // 2. Create Account
+    @Transactional
+    fun registerProfessor(
+        email: String,
+        rawPassword: String,
+        firstName: String,
+        lastName: String,
+        professorId: String,
+        employeeType: EmployeeType
+    ): String {
+        if (accountRepository.existsByEmail(email)) {
+            throw IllegalArgumentException("Email already in use")
+        }
+        if (professorRepository.existsByProfessorId(professorId)) {
+            throw IllegalArgumentException("Professor ID already in use")
+        }
+        val account = accountRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
+        professorRepository.save(
+            Professors(
+                accountId = account.accountId,
+                professorId = professorId,
+                employeeType = employeeType
+            )
+        )
+        accountRepository.addRole(account.accountId, 2L)
+        return "Professor created: $professorId"
+    }
+
+    @Transactional
+    fun registerAdmin(
+        email: String,
+        rawPassword: String,
+        firstName: String,
+        lastName: String
+    ): String {
+        if (accountRepository.existsByEmail(email)) {
+            throw IllegalArgumentException("Email already in use")
+        }
         val newAccount = Accounts(
             email = email,
             passwordHash = passwordEncoder.encode(rawPassword)
         )
         val savedAccount = accountRepository.save(newAccount)
-
-        // 3. Create Profile
         val profile = UserProfiles(
             accountId = savedAccount.accountId,
             firstName = firstName,
             lastName = lastName
         )
         userProfileRepository.save(profile)
-
-        // 4. Assign Role (3 = ADMIN)
-        // Ensure accountId is not null (it shouldn't be after save)
         savedAccount.accountId.let { id ->
             accountRepository.addRole(id, 3L)
         }
