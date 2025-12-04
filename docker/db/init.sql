@@ -424,8 +424,8 @@ ALTER TABLE school.schedules
         room_no WITH =,
         day_name WITH =,
         tsrange(
-                ('2000-01-01 ' || start_time)::timestamp,
-                ('2000-01-01 ' || end_time)::timestamp
+                ('2000-01-01'::date + start_time),
+                ('2000-01-01'::date + end_time)
         ) WITH &&
         ) WHERE (room_no IS NOT NULL);
 
