@@ -1,9 +1,6 @@
 -- =============================================================================
 -- DATABASE INITIALIZATION SCRIPT
 -- =============================================================================
--- Features: pgcrypto, btree_gist (for exclusionary constraints)
--- Styling: Comma-first, Vertically Aligned
--- =============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS btree_gist;
@@ -480,18 +477,103 @@ ALTER TABLE school.grades
 -- =============================================================================
 -- VIEW DEFINITIONS
 -- =============================================================================
-CREATE OR REPLACE VIEW school.vwlogin AS
+
+-- Student Profile View
+CREATE OR REPLACE VIEW school.vw_student_profile AS
 SELECT
-    a.account_id,
+    s.account_id,
+    s.student_no,
+    CONCAT(
+            up.last_name, ', ',
+            up.first_name,
+            CASE
+                WHEN up.middle_name IS NOT NULL AND up.middle_name <> ''
+                    THEN CONCAT(' ', SUBSTRING(up.middle_name, 1, 1), '.')
+                ELSE ''
+                END
+    ) AS student_name,
     a.email,
-    a.password_hash,
-    a.status,
-    ar.role_no
-FROM
-    school.accounts a
-        JOIN
-    school.account_roles ar
-    ON a.account_id = ar.account_id;
+    s.student_status,
+    s.student_type,
+    s.year_level,
+    s.education_level
+FROM school.students s
+         JOIN school.user_profiles up ON s.account_id = up.account_id
+         JOIN school.accounts a ON s.account_id = a.account_id;
+
+-- Professor Profile View
+CREATE OR REPLACE VIEW school.vw_professor_profile AS
+SELECT
+    p.account_id,
+    p.professor_id,
+    CONCAT(
+            up.last_name, ', ',
+            up.first_name,
+            CASE
+                WHEN up.middle_name IS NOT NULL AND up.middle_name <> ''
+                    THEN CONCAT(' ', SUBSTRING(up.middle_name, 1, 1), '.')
+                ELSE ''
+                END
+    ) AS professor_name,
+    a.email,
+    p.professor_status,
+    p.employee_type
+FROM school.professors p
+         JOIN school.user_profiles up ON p.account_id = up.account_id
+         JOIN school.accounts a ON p.account_id = a.account_id;
+
+-- Enrollment Details View
+CREATE OR REPLACE VIEW school.vw_enrollment_details AS
+SELECT
+    e.enrollment_no,
+    e.account_id AS student_account_id,
+    e.academic_term_no,
+    es.section_no,
+    sub.subject_code,
+    sub.subject_name,
+    (sub.lec_units + sub.lab_units) AS total_units,
+    sec.delivery_mode,
+    sch.day_name,
+    sch.start_time,
+    sch.end_time,
+    r.room_name,
+    (
+        SELECT string_agg(CONCAT(c.course_code, ' ', b.year_level, '-', b.block_number), ', ')
+        FROM school.section_blocks sb
+                 JOIN school.blocks b ON sb.block_no = b.block_no
+                 JOIN school.courses c ON b.course_code = c.course_code
+        WHERE sb.section_no = sec.section_no
+    ) AS section_name
+FROM school.enrollments e
+         JOIN school.enrollment_sections es ON e.enrollment_no = es.enrollment_no
+         JOIN school.sections sec ON es.section_no = sec.section_no
+         JOIN school.subjects sub ON sec.subject_code = sub.subject_code
+         LEFT JOIN school.schedules sch ON sec.section_no = sch.section_no
+         LEFT JOIN school.rooms r ON sch.room_no = r.room_no;
+
+-- Student Grades View
+CREATE OR REPLACE VIEW school.vw_student_grades AS
+SELECT
+    g.enrollment_no,
+    e.account_id AS student_account_id,
+    s.student_no,
+    sub.subject_code,
+    sub.subject_name,
+    sec.section_no,
+    gc.gc_name,
+    gc.percent AS weight_percent,
+    gc.max_score,
+    g.raw_score,
+    CAST(
+            (CAST(g.raw_score AS DECIMAL) / NULLIF(gc.max_score, 0)) * gc.percent
+        AS DECIMAL(5,2)
+    ) AS weighted_score
+FROM school.grades g
+         JOIN school.grade_components gc ON g.gc_no = gc.gc_no
+         JOIN school.enrollments e ON g.enrollment_no = e.enrollment_no
+         JOIN school.students s ON e.account_id = s.account_id
+         JOIN school.sections sec ON gc.section_no = sec.section_no
+         JOIN school.subjects sub ON sec.subject_code = sub.subject_code;
 
 -- =============================================================================
 -- DEFAULT INSERTS

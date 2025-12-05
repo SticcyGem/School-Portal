@@ -1,6 +1,6 @@
 package net.bscs22.schoolportal.configs
 
-import net.bscs22.schoolportal.repositories.LoginRepository
+import net.bscs22.schoolportal.repositories.AccountRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationProvider
@@ -12,24 +12,18 @@ import org.springframework.security.crypto.password.PasswordEncoder
 
 @Configuration
 class ApplicationConfig(
-    private val loginRepository: LoginRepository,
+    private val accountsRepository: AccountRepository,
 ) {
 
     @Bean
     fun userDetailsService(): UserDetailsService {
         return UserDetailsService { email ->
-            val user = loginRepository.findByEmail(email)
+            val user = accountsRepository.findByEmail(email)
                 ?: throw UsernameNotFoundException("User not found")
-
             org.springframework.security.core.userdetails.User
                 .withUsername(user.email)
                 .password(user.passwordHash)
-                .roles(when (user.roleNo) {
-                    1L -> "STUDENT"
-                    2L -> "PROFESSOR"
-                    3L -> "ADMIN"
-                    else -> "USER"
-                })
+                .roles(*user.roles.map { it.roleName }.toTypedArray())
                 .build()
         }
     }

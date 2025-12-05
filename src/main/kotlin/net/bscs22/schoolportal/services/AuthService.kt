@@ -4,11 +4,11 @@ import net.bscs22.schoolportal.models.Accounts
 import net.bscs22.schoolportal.models.Professors
 import net.bscs22.schoolportal.models.Students
 import net.bscs22.schoolportal.models.UserProfiles
+import net.bscs22.schoolportal.models.enums.AccountStatus
 import net.bscs22.schoolportal.models.enums.EducationLevel
 import net.bscs22.schoolportal.models.enums.EmployeeType
 import net.bscs22.schoolportal.models.enums.StudentType
 import net.bscs22.schoolportal.repositories.AccountRepository
-import net.bscs22.schoolportal.repositories.LoginRepository
 import net.bscs22.schoolportal.repositories.ProfessorRepository
 import net.bscs22.schoolportal.repositories.StudentRepository
 import net.bscs22.schoolportal.repositories.UserProfileRepository
@@ -18,8 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AuthService(
-    private val loginRepository: LoginRepository,
-    private val accountRepository: AccountRepository,
+    private val accountsRepository: AccountRepository,
     private val userProfileRepository: UserProfileRepository,
     private val studentRepository: StudentRepository,
     private val professorRepository: ProfessorRepository,
@@ -31,24 +30,17 @@ class AuthService(
         email: String,
         rawPassword: String
     ): Map<String, Any>? {
-        val user = loginRepository.findByEmail(email) ?: return null
-
-        if (user.status != "ACTIVE") {
+        val user = accountsRepository.findByEmail(email) ?: return null
+        if (user.status != AccountStatus.ACTIVE) {
             return null
         }
-
         if (passwordEncoder.matches(rawPassword, user.passwordHash)) {
-            val roleName = when(user.roleNo) {
-                1L -> "STUDENT"
-                2L -> "PROFESSOR"
-                3L -> "ADMIN"
-                else -> "UNKNOWN"
-            }
-            val token = jwtService.generateToken(user.email, user.accountId, roleName)
+            val primaryRole = user.roles.firstOrNull()?.roleName ?: "UNKNOWN"
+            val token = jwtService.generateToken(user.email, user.accountId, primaryRole)
             return mapOf(
                 "token" to token,
                 "accountId" to user.accountId.toString(),
-                "role" to roleName
+                "role" to primaryRole
             )
         }
         return null
@@ -64,13 +56,13 @@ class AuthService(
         educationLevel: EducationLevel,
         studentType: StudentType
     ): String {
-        if (accountRepository.existsByEmail(email)) {
+        if (accountsRepository.existsByEmail(email)) {
             throw IllegalArgumentException("Email already in use")
         }
         if (studentRepository.existsByStudentNo(studentNo)) {
             throw IllegalArgumentException("Student No already in use")
         }
-        val account = accountRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        val account = accountsRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
         userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
         studentRepository.save(
             Students(
@@ -80,7 +72,7 @@ class AuthService(
                 studentType = studentType
             )
         )
-        accountRepository.addRole(account.accountId, 1L)
+        accountsRepository.addRole(account.accountId, 1L)
         return "Student created: $studentNo"
     }
 
@@ -93,13 +85,13 @@ class AuthService(
         professorId: String,
         employeeType: EmployeeType
     ): String {
-        if (accountRepository.existsByEmail(email)) {
+        if (accountsRepository.existsByEmail(email)) {
             throw IllegalArgumentException("Email already in use")
         }
         if (professorRepository.existsByProfessorId(professorId)) {
             throw IllegalArgumentException("Professor ID already in use")
         }
-        val account = accountRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        val account = accountsRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
         userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
         professorRepository.save(
             Professors(
@@ -108,7 +100,7 @@ class AuthService(
                 employeeType = employeeType
             )
         )
-        accountRepository.addRole(account.accountId, 2L)
+        accountsRepository.addRole(account.accountId, 2L)
         return "Professor created: $professorId"
     }
 
@@ -119,14 +111,14 @@ class AuthService(
         firstName: String,
         lastName: String
     ): String {
-        if (accountRepository.existsByEmail(email)) {
+        if (accountsRepository.existsByEmail(email)) {
             throw IllegalArgumentException("Email already in use")
         }
         val newAccount = Accounts(
             email = email,
             passwordHash = passwordEncoder.encode(rawPassword)
         )
-        val savedAccount = accountRepository.save(newAccount)
+        val savedAccount = accountsRepository.save(newAccount)
         val profile = UserProfiles(
             accountId = savedAccount.accountId,
             firstName = firstName,
@@ -134,9 +126,8 @@ class AuthService(
         )
         userProfileRepository.save(profile)
         savedAccount.accountId.let { id ->
-            accountRepository.addRole(id, 3L)
+            accountsRepository.addRole(id, 3L)
         }
-
         return "Admin account created successfully for ${savedAccount.email}"
     }
 }
