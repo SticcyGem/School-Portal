@@ -9,7 +9,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "accounts", schema = "school")
-class Accounts(
+class Account(
     @Id
     @Column(name = "account_id")
     var accountId: UUID = UUID.randomUUID(),
@@ -37,5 +37,5 @@ class Accounts(
         joinColumns = [JoinColumn(name = "account_id")],
         inverseJoinColumns = [JoinColumn(name = "role_no")]
     )
-    var roles: MutableSet<Roles> = mutableSetOf()
+    var roles: MutableSet<Role> = mutableSetOf()
 )

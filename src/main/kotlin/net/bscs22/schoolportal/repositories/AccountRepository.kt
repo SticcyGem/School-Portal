@@ -1,6 +1,6 @@
 package net.bscs22.schoolportal.repositories
 
-import net.bscs22.schoolportal.models.Accounts
+import net.bscs22.schoolportal.models.Account
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Repository
-interface AccountRepository : JpaRepository<Accounts, UUID> {
-    fun findByEmail(email: String): Accounts?
+interface AccountRepository : JpaRepository<Account, UUID> {
+    fun findByEmail(email: String): Account?
     fun existsByEmail(email: String): Boolean
 
     @Modifying

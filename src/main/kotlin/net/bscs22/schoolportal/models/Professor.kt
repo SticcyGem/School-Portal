@@ -10,7 +10,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "professors", schema = "school")
-class Professors(
+class Professor(
     @Id
     @Column(name = "account_id")
     var accountId: UUID? = null,

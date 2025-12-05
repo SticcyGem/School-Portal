@@ -1,9 +1,9 @@
 package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.models.Accounts
-import net.bscs22.schoolportal.models.Professors
-import net.bscs22.schoolportal.models.Students
-import net.bscs22.schoolportal.models.UserProfiles
+import net.bscs22.schoolportal.models.Account
+import net.bscs22.schoolportal.models.Professor
+import net.bscs22.schoolportal.models.Student
+import net.bscs22.schoolportal.models.UserProfile
 import net.bscs22.schoolportal.models.enums.AccountStatus
 import net.bscs22.schoolportal.models.enums.EducationLevel
 import net.bscs22.schoolportal.models.enums.EmployeeType
@@ -62,10 +62,10 @@ class AuthService(
         if (studentRepository.existsByStudentNo(studentNo)) {
             throw IllegalArgumentException("Student No already in use")
         }
-        val account = accountsRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
-        userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
+        val account = accountsRepository.save(Account(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        userProfileRepository.save(UserProfile(accountId = account.accountId, firstName = firstName, lastName = lastName))
         studentRepository.save(
-            Students(
+            Student(
                 accountId = account.accountId,
                 studentNo = studentNo,
                 educationLevel = educationLevel,
@@ -91,10 +91,10 @@ class AuthService(
         if (professorRepository.existsByProfessorId(professorId)) {
             throw IllegalArgumentException("Professor ID already in use")
         }
-        val account = accountsRepository.save(Accounts(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
-        userProfileRepository.save(UserProfiles(accountId = account.accountId, firstName = firstName, lastName = lastName))
+        val account = accountsRepository.save(Account(email = email, passwordHash = passwordEncoder.encode(rawPassword)))
+        userProfileRepository.save(UserProfile(accountId = account.accountId, firstName = firstName, lastName = lastName))
         professorRepository.save(
-            Professors(
+            Professor(
                 accountId = account.accountId,
                 professorId = professorId,
                 employeeType = employeeType
@@ -114,12 +114,12 @@ class AuthService(
         if (accountsRepository.existsByEmail(email)) {
             throw IllegalArgumentException("Email already in use")
         }
-        val newAccount = Accounts(
+        val newAccount = Account(
             email = email,
             passwordHash = passwordEncoder.encode(rawPassword)
         )
         val savedAccount = accountsRepository.save(newAccount)
-        val profile = UserProfiles(
+        val profile = UserProfile(
             accountId = savedAccount.accountId,
             firstName = firstName,
             lastName = lastName

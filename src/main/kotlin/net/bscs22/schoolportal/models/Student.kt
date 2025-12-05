@@ -11,7 +11,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "students", schema = "school")
-class Students(
+class Student(
     @Id
     @Column(name = "account_id")
     var accountId: UUID? = null,
