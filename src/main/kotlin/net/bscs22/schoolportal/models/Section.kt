@@ -1,7 +1,7 @@
 package net.bscs22.schoolportal.models
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.enums.DeliveryMode
+import net.bscs22.schoolportal.models.enums.DeliveryMode // Import the new Enum
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
@@ -13,41 +13,40 @@ class Section(
     @Column(name = "section_no")
     var sectionNo: Long? = null,
 
-    @Column(name = "available_slots", nullable = false)
+    @Column(name = "available_slots")
     var availableSlots: Long = 40,
 
-    @Column(name = "version", nullable = false)
+    @Column(name = "version")
     var version: Long = 0,
 
+    // --- FIX START ---
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "delivery_mode", columnDefinition = "school.delivery_mode_enum", nullable = false)
-    var deliveryMode: DeliveryMode,
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM) // Required for Postgres Enums
+    @Column(name = "delivery_mode", columnDefinition = "school.delivery_mode_enum")
+    var deliveryMode: DeliveryMode = DeliveryMode.FACE_TO_FACE,
+    // --- FIX END ---
+
+    @Column(name = "subject_code")
+    var subjectCode: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_code", nullable = false)
+    @JoinColumn(name = "subject_code", insertable = false, updatable = false)
     var subject: Subject,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "professor_id", referencedColumnName = "professor_id", nullable = false)
-    var professor: Professor,
+    @Column(name = "professor_id")
+    var professorId: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "academic_term_no", nullable = false)
-    var term: AcademicTerm,
+    @JoinColumn(name = "professor_id", referencedColumnName = "professor_id", insertable = false, updatable = false)
+    var professor: Professor? = null,
 
-    @OneToMany(mappedBy = "section", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_term_no")
+    var academicTerm: AcademicTerm? = null,
+
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
     var schedules: MutableList<Schedule> = mutableListOf(),
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "section_blocks",
-        schema = "school",
-        joinColumns = [JoinColumn(name = "section_no")],
-        inverseJoinColumns = [JoinColumn(name = "block_no")]
-    )
-    var blocks: MutableSet<Block> = mutableSetOf(),
-
-    @OneToMany(mappedBy = "section", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var gradeComponents: MutableList<GradeComponent> = mutableListOf()
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
+    var blocks: MutableList<SectionBlock> = mutableListOf()
 )

@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface SectionRepository : JpaRepository<Section, Long> {
     fun findByBlocks_BlockNo(blockNo: Long): List<Section>
     fun findBySubject_SubjectCodeIn(subjectCodes: List<String>): List<Section>
+    fun findByAcademicTerm_AcademicTermNo(termNo: Long): List<Section>
 }

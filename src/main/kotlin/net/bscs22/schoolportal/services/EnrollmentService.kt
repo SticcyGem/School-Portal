@@ -7,7 +7,6 @@ import net.bscs22.schoolportal.models.enums.EnrollmentStatus
 import net.bscs22.schoolportal.models.enums.StudentStatus
 import net.bscs22.schoolportal.models.enums.StudentType
 import net.bscs22.schoolportal.repositories.*
-import net.bscs22.schoolportal.models.views.PendingEnrollmentDetail // <-- REQUIRED VIEW MODEL
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -20,17 +19,16 @@ class EnrollmentService(
     private val sectionRepository: SectionRepository,
     private val enrollmentRepository: EnrollmentRepository,
     private val creditedSubjectRepository: CreditedSubjectRepository,
-    private val subjectRepository: SubjectRepository, // Still needed for non-view helper methods
-    // CRITICAL FIX: The repository to fetch the flattened view data
-    private val pendingEnrollmentRepository: PendingEnrollmentRepository
+    private val subjectRepository: SubjectRepository,
+    // Ensure this repository name matches the interface you created (PendingEnrollmentDetailRepository)
+    private val pendingEnrollmentRepository: PendingEnrollmentDetailRepository
 ) {
 
     // --- DTOs for Admin Approval Screen ---
-    // These DTOs match the structure needed by the frontend, grouped by enrollment.
     data class AdminEnrollmentDetailDTO(
         val enrollmentNo: Long,
         val studentName: String,
-        val studentId: String, // student_no from view
+        val studentId: String,
         val courseCode: String,
         val termName: String,
         val totalUnits: Long,
@@ -44,7 +42,7 @@ class EnrollmentService(
         val schedule: String
     )
 
-    // 1. GET OFFERINGS (Kept for completeness)
+    // 1. GET OFFERINGS
     fun getEnrollmentOptions(accountId: UUID): EnrollmentOfferingResponse {
         val student = studentRepository.findById(accountId)
             .orElseThrow { IllegalArgumentException("Student record not found") }
@@ -52,8 +50,10 @@ class EnrollmentService(
         val currentTerm = termRepository.findActiveEnrollmentTerm()
             ?: throw IllegalStateException("No active enrollment period found.")
 
-        // --- Placeholder for fetching sections ---
-        val availableSections: List<Section> = emptyList()
+        // FIX: Fetch sections properly using the academic term
+        val availableSections = sectionRepository.findByAcademicTerm_AcademicTermNo(
+            currentTerm.academicTermNo!!
+        )
 
         val existingEnrollment = enrollmentRepository.findByStudentAccount_AccountIdAndTerm_AcademicTermNo(
             accountId, currentTerm.academicTermNo!!
@@ -69,7 +69,7 @@ class EnrollmentService(
         )
     }
 
-    // 2. SUBMIT ENROLLMENT (DRAFT MODE) - Handles CREATE and UPDATE
+    // 2. SUBMIT ENROLLMENT (DRAFT MODE)
     @Transactional
     fun submitEnrollment(accountId: UUID, sectionIds: List<Long>): String {
         val account = accountRepository.findById(accountId).get()
@@ -104,12 +104,10 @@ class EnrollmentService(
             if (enrollment.enrollmentStatus == EnrollmentStatus.ENROLLED) {
                 throw IllegalArgumentException("You are already officially enrolled. Changes must be made by an admin.")
             }
-            // Update logic: Clear old sections, reset status/remarks
             enrollment.sections.clear()
             enrollment.remarks = null
             enrollment.enrollmentStatus = EnrollmentStatus.DRAFT
         } else {
-            // New logic
             enrollment = Enrollment(
                 studentAccount = account,
                 term = currentTerm,
@@ -127,11 +125,10 @@ class EnrollmentService(
         }
 
         enrollmentRepository.save(enrollment)
-
         return "Draft enrollment saved. (${sectionsToEnroll.size} subjects selected). Waiting for Admin approval."
     }
 
-    // 3. APPROVE ENROLLMENT (Admin Action)
+    // 3. APPROVE ENROLLMENT
     @Transactional
     fun approveEnrollment(enrollmentId: Long): String {
         val enrollment = enrollmentRepository.findById(enrollmentId)
@@ -164,7 +161,7 @@ class EnrollmentService(
         return "Student successfully enrolled."
     }
 
-    // 4. REJECT ENROLLMENT (Admin Action)
+    // 4. REJECT ENROLLMENT
     @Transactional
     fun rejectEnrollment(enrollmentId: Long, reason: String): String {
         val enrollment = enrollmentRepository.findById(enrollmentId)
@@ -182,19 +179,15 @@ class EnrollmentService(
     }
 
     // =========================================================================
-    // FEATURE: ADMIN - LIST PENDING ENROLLMENTS (OPTIMIZED VIA VIEW)
+    // FEATURE: ADMIN - LIST PENDING ENROLLMENTS
     // =========================================================================
 
     @Transactional(readOnly = true)
     fun getPendingEnrollments(): List<AdminEnrollmentDetailDTO> {
-        // 1. Fetch all detailed rows from the view (ONE QUERY)
-        // NOTE: We assume PendingEnrollmentRepository is defined to fetch the data
         val rawData = pendingEnrollmentRepository.findAll()
 
-        // 2. Group the flat data by enrollment number
         return rawData.groupBy { it.enrollmentNo }.map { (enrollmentNo, records) ->
             val firstRecord = records.first()
-
             val totalUnits = records.sumOf { it.units }
 
             AdminEnrollmentDetailDTO(
@@ -205,39 +198,36 @@ class EnrollmentService(
                 termName = firstRecord.termName,
                 totalUnits = totalUnits,
 
-                // Map the grouped records to the sections DTO
                 sections = records.map { record ->
                     SectionApprovalDTO(
                         sectionNo = record.sectionNo,
                         subjectCode = record.subjectCode,
-                        subjectTitle = record.subjectTitle,
-                        schedule = record.schedule // schedule is now the pre-formatted string from the view
+
+                        // FIX #1: Use correct property names from PendingEnrollmentDetail entity
+                        subjectTitle = record.subjectName,
+                        schedule = record.fullSchedule ?: "TBA"
                     )
                 }
             )
         }
     }
 
-    // --- HELPERS (Kept for completeness) ---
+    // --- HELPERS ---
 
     private fun checkScheduleConflicts(sections: List<Section>) {
-        // Flatten all schedules: List of (Section, Schedule)
         val allSchedules = sections.flatMap { sec ->
             sec.schedules.map { sched -> sec to sched }
         }
 
-        // Compare every schedule against every other schedule
         for (i in allSchedules.indices) {
             for (j in i + 1 until allSchedules.size) {
                 val (secA, schedA) = allSchedules[i]
                 val (secB, schedB) = allSchedules[j]
 
-                // Same Day?
                 if (schedA.dayName == schedB.dayName) {
-                    // Overlap Check Logic: (StartA < EndB) and (EndA > StartB)
                     if (schedA.startTime.isBefore(schedB.endTime) && schedA.endTime.isAfter(schedB.startTime)) {
                         throw IllegalArgumentException(
-                            "Schedule Conflict: ${secA.subject.subjectCode} (${schedA.startTime}-${schedA.endTime}) overlaps with ${secB.subject.subjectCode} (${schedB.startTime}-${schedB.endTime}) on ${schedA.dayName}"
+                            "Schedule Conflict: ${secA.subject.subjectCode} overlaps with ${secB.subject.subjectCode} on ${schedA.dayName}"
                         )
                     }
                 }
@@ -250,8 +240,14 @@ class EnrollmentService(
             "${it.dayName} ${it.startTime}-${it.endTime} (${it.room.roomName})"
         }
 
-        val sectionName = section.blocks.firstOrNull()?.let {
-            "${it.course.courseCode} ${it.yearLevel}-${it.blockNumber}"
+        // FIX #2: Correctly traverse Section -> SectionBlock -> Block -> Course
+        val sectionName = section.blocks.firstOrNull()?.let { sectionBlock ->
+            val block = sectionBlock.block
+            if (block != null && block.course != null) {
+                "${block.course!!.courseCode} ${block.yearLevel}-${block.blockNumber}"
+            } else {
+                "Unknown Block"
+            }
         } ?: "Open Section"
 
         return SectionDTO(
