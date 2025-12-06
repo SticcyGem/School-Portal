@@ -6,6 +6,7 @@ import net.bscs22.schoolportal.models.enums.StudentStatus
 import net.bscs22.schoolportal.models.enums.StudentType
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import org.springframework.data.domain.Persistable // Import this!
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -17,13 +18,14 @@ class Student(
     var accountId: UUID,
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId // <--- ADD THIS ANNOTATION
+    @MapsId
     @JoinColumn(name = "account_id")
     var account: Account? = null,
 
     @Column(name = "student_no", unique = true, insertable = false, updatable = false)
     var studentNo: Long? = null,
 
+    // ... (Your other fields remain exactly the same) ...
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "student_status", columnDefinition = "school.student_status_enum")
@@ -58,4 +60,19 @@ class Student(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "block_no", insertable = false, updatable = false)
     var block: Block? = null
-)
+
+) : Persistable<UUID> { // <--- 1. Implement Interface
+
+    @Transient
+    private var isNewEntry: Boolean = true
+
+    override fun getId(): UUID? = accountId
+
+    override fun isNew(): Boolean = isNewEntry
+
+    @PostLoad
+    @PostPersist
+    fun markNotNew() {
+        isNewEntry = false
+    }
+}

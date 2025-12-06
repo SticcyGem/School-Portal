@@ -87,26 +87,30 @@ class AuthService(
             throw IllegalArgumentException("Student No already in use")
         }
 
-        // 1. Create the base Account entity (ID is generated here)
+        // 1. Create base Account
         val account = Account(
             email = email,
             passwordHash = passwordEncoder.encode(rawPassword)
-            // roles will be added later
         )
 
-        // 2. Create UserProfile, linking the Account entity
+        // 2. SAVE ACCOUNT FIRST and CAPTURE the result
+        // This ensures 'savedAccount' is the strictly managed entity with the generated ID
+        val savedAccount = accountRepository.save(account)
+
+        // 3. Create UserProfile using 'savedAccount'
+        // Since we added Persistable, Hibernate will now correctly INSERT this.
         val profile = UserProfile(
-            accountId = account.accountId,
-            account = account, // CRITICAL: Link the Account entity reference
+            accountId = savedAccount.accountId,
+            account = savedAccount, // Link the SAVED entity
             firstName = firstName,
             middleName = middleName,
             lastName = lastName
         )
 
-        // 3. Create Student, linking the Account entity
+        // 4. Create Student using 'savedAccount'
         val student = Student(
-            accountId = account.accountId,
-            account = account, // CRITICAL: Link the Account entity reference
+            accountId = savedAccount.accountId,
+            account = savedAccount, // Link the SAVED entity
             studentNo = studentNo,
             educationLevel = educationLevel,
             studentType = studentType,
@@ -114,18 +118,12 @@ class AuthService(
             blockNo = blockNo
         )
 
-        // 4. Persistence Order (Crucial for @MapsId fix):
-        // Save the Account first to establish its identity (the UUID).
-        // Then, save the dependents.
-        accountRepository.save(account)
-
-        // Because UserProfile and Student use @MapsId, saving them uses the
-        // existing Account ID and avoids the transactional conflict.
+        // 5. Save Dependents
         userProfileRepository.save(profile)
         studentRepository.save(student)
 
-        // 5. Add Role
-        accountRepository.addRole(account.accountId, 1L)
+        // 6. Add Role
+        accountRepository.addRole(savedAccount.accountId, 1L)
 
         return if (studentNo != null) "Student created: $studentNo" else "Student created (ID pending generation)"
     }
