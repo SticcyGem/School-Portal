@@ -6,7 +6,7 @@ import net.bscs22.schoolportal.models.enums.StudentStatus
 import net.bscs22.schoolportal.models.enums.StudentType
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -14,19 +14,24 @@ import java.util.UUID
 class Student(
     @Id
     @Column(name = "account_id")
-    var accountId: UUID? = null,
+    var accountId: UUID,
 
-    @Column(name = "student_no", unique = true, nullable = false)
-    var studentNo: Long,
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId // <--- ADD THIS ANNOTATION
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
+
+    @Column(name = "student_no", unique = true, insertable = false, updatable = false)
+    var studentNo: Long? = null,
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "student_status", columnDefinition = "school.student_status_type")
+    @Column(name = "student_status", columnDefinition = "school.student_status_enum")
     var studentStatus: StudentStatus = StudentStatus.ADMITTED,
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "education_level", columnDefinition = "school.education_level_type")
+    @Column(name = "education_level", columnDefinition = "school.education_level_enum")
     var educationLevel: EducationLevel = EducationLevel.UNDERGRADUATE,
 
     @Enumerated(EnumType.STRING)
@@ -38,5 +43,19 @@ class Student(
     var yearLevel: Long = 1,
 
     @Column(name = "student_admitted_at")
-    var admittedAt: LocalDateTime = LocalDateTime.now()
+    var studentAdmittedAt: OffsetDateTime = OffsetDateTime.now(),
+
+    @Column(name = "course_code", nullable = false)
+    var courseCode: String,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_code", insertable = false, updatable = false)
+    var course: Course? = null,
+
+    @Column(name = "block_no")
+    var blockNo: Long? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "block_no", insertable = false, updatable = false)
+    var block: Block? = null
 )

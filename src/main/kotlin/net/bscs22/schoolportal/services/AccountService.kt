@@ -1,5 +1,6 @@
 package net.bscs22.schoolportal.services
 
+import net.bscs22.schoolportal.controllers.AdminController
 import net.bscs22.schoolportal.models.enums.AccountStatus
 import net.bscs22.schoolportal.repositories.AccountRepository
 import net.bscs22.schoolportal.repositories.UserProfileRepository
@@ -62,5 +63,31 @@ class AccountService(
         userProfileRepository.save(profile)
 
         return "Account details updated for ${account.email}"
+    }
+
+    @Transactional(readOnly = true)
+    fun getAllUserDetails(): List<AdminController.UserDetailDTO> {
+        // NOTE: This assumes you join Account, UserProfile, and Roles data.
+        // For simplicity, we mock data retrieval here:
+
+        // In reality, this should be a custom query joining Account, UserProfile, and Roles
+        val accounts = accountRepository.findAll() // Fetch all accounts
+
+        return accounts.mapNotNull { account ->
+            val profile = userProfileRepository.findById(account.accountId).orElse(null)
+
+            if (profile != null) {
+                AdminController.UserDetailDTO(
+                    accountId = account.accountId,
+                    email = account.email,
+                    firstName = profile.firstName,
+                    lastName = profile.lastName,
+                    status = account.status.name,
+                    roles = account.roles.map { it.roleName }
+                )
+            } else {
+                null // Skip accounts without a profile (if any)
+            }
+        }
     }
 }

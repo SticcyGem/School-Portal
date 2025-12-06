@@ -28,7 +28,7 @@ CREATE TYPE school.delivery_mode_enum AS
 CREATE TYPE school.subject_status_enum AS
     ENUM ('ENROLLED', 'DROPPED', 'CREDITED');
 CREATE TYPE school.enrollment_status_enum AS
-    ENUM ('DRAFT', 'ENROLLED', 'DROPPED');
+    ENUM ('DRAFT', 'ENROLLED', 'DROPPED', 'REJECTED');
 CREATE TYPE school.day_name_enum AS
     ENUM ('SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY');
 CREATE TYPE school.service_status_enum AS
@@ -85,6 +85,8 @@ CREATE TABLE school.students (
     , student_type                    school.student_type_enum      NOT NULL DEFAULT 'REGULAR'
     , year_level                      BIGINT                        NOT NULL DEFAULT 1
     , student_admitted_at             TIMESTAMPTZ                   NOT NULL DEFAULT NOW()
+    , course_code                     VARCHAR(10)                   NOT NULL
+    , block_no                        BIGINT                            NULL
     , PRIMARY KEY (account_id)
 );
 
@@ -176,6 +178,7 @@ CREATE TABLE school.enrollments (
     , enrollment_status               school.enrollment_status_enum NOT NULL
     , account_id                      UUID                          NOT NULL
     , academic_term_no                BIGINT                        NOT NULL
+    , remarks                         VARCHAR(500)                      NULL
     , PRIMARY KEY (enrollment_no)
 );
 
@@ -313,6 +316,12 @@ ALTER TABLE school.students
         FOREIGN KEY (account_id)
             REFERENCES school.accounts(account_id)
             ON DELETE CASCADE,
+    ADD CONSTRAINT fk_students_course
+        FOREIGN KEY (course_code)
+            REFERENCES school.courses(course_code),
+    ADD CONSTRAINT fk_students_block
+        FOREIGN KEY (block_no)
+            REFERENCES school.blocks(block_no),
     ADD CONSTRAINT uq_students_student_no
         UNIQUE (student_no);
 
@@ -447,7 +456,11 @@ ALTER TABLE school.academic_terms
 
 ALTER TABLE school.rooms
     ADD CONSTRAINT chk_room_capacity
-        CHECK (room_capacity IS NULL OR room_capacity > 0);
+        CHECK (room_capacity IS NULL OR room_capacity > 0),
+    ADD CONSTRAINT fk_rooms_building
+            FOREIGN KEY (building_no)
+                REFERENCES school.buildings(building_no)
+                ON DELETE SET NULL;
 
 -- VI. GRADING
 ALTER TABLE school.grade_components
@@ -574,6 +587,87 @@ FROM school.grades g
          JOIN school.students s ON e.account_id = s.account_id
          JOIN school.sections sec ON gc.section_no = sec.section_no
          JOIN school.subjects sub ON sec.subject_code = sub.subject_code;
+
+-- Student Credited Subjects
+-- Returns a list of subjects a student has passed.
+CREATE OR REPLACE VIEW school.vw_student_credited_subjects AS
+SELECT
+    e.account_id AS student_account_id,
+    s.subject_code,
+    s.subject_name,
+    s.lec_units,
+    s.lab_units,
+    es.subject_status
+FROM school.enrollment_sections es
+         JOIN school.enrollments e ON es.enrollment_no = e.enrollment_no
+         JOIN school.sections sec ON es.section_no = sec.section_no
+         JOIN school.subjects s ON sec.subject_code = s.subject_code
+WHERE es.subject_status = 'CREDITED';
+
+-- SECTION GRADE
+CREATE OR REPLACE VIEW school.vw_section_grade_sheet AS
+SELECT
+    ROW_NUMBER() OVER (ORDER BY e.enrollment_no, g.gc_no) AS view_id,
+    sec.section_no,
+    e.enrollment_no,
+    e.account_id AS student_account_id,
+    CONCAT(up.last_name, ', ', up.first_name) AS student_name,
+    g.gc_no AS component_id,
+    g.raw_score
+FROM school.enrollments e
+         JOIN school.enrollment_sections es ON e.enrollment_no = es.enrollment_no
+         JOIN school.sections sec ON es.section_no = sec.section_no
+         JOIN school.user_profiles up ON e.account_id = up.account_id
+         LEFT JOIN school.grades g ON e.enrollment_no = g.enrollment_no
+         LEFT JOIN school.grade_components gc
+                   ON g.gc_no = gc.gc_no AND gc.section_no = sec.section_no
+WHERE e.enrollment_status = 'ENROLLED';
+
+-- FIX: Create the view specifically for Admin Enrollment Approval (DRAFT students)
+CREATE OR REPLACE VIEW school.vw_pending_enrollment_details AS
+SELECT
+    -- Enrollment Header Info
+    e.enrollment_no,
+    e.enrollment_status,
+    e.account_id AS student_account_id,
+
+    -- Student Profile Info
+    s.student_no,
+    CONCAT(up.last_name, ', ', up.first_name) AS student_name,
+
+    -- Term Info
+    at.term_name,
+
+    -- Subject & Section Info (One row per subject enrolled)
+    es.section_no,
+    sub.subject_code,
+    sub.subject_name,
+    (sub.lec_units + sub.lab_units) AS units,
+    c.course_code,
+
+    -- Schedule Info (Note: This aggregation is required because one section can have multiple schedules)
+    (
+        SELECT string_agg(
+                       CONCAT(sch.day_name, ' ', sch.start_time, '-', sch.end_time, ' (', r.room_name, ')'),
+                       '; '
+               )
+        FROM school.schedules sch
+                 JOIN school.rooms r ON sch.room_no = r.room_no
+        WHERE sch.section_no = es.section_no
+    ) AS full_schedule
+
+FROM school.enrollments e
+         JOIN school.user_profiles up ON e.account_id = up.account_id
+         JOIN school.students s ON e.account_id = s.account_id
+         JOIN school.courses c ON s.course_code = c.course_code
+         JOIN school.academic_terms at ON e.academic_term_no = at.academic_term_no
+
+    -- Subject details via enrollment sections
+         JOIN school.enrollment_sections es ON e.enrollment_no = es.enrollment_no
+         JOIN school.sections sec ON es.section_no = sec.section_no
+         JOIN school.subjects sub ON sec.subject_code = sub.subject_code
+
+WHERE e.enrollment_status = 'DRAFT';
 
 -- =============================================================================
 -- DEFAULT INSERTS
@@ -710,6 +804,36 @@ CREATE TRIGGER trg_check_gc_parent
     BEFORE INSERT OR UPDATE ON school.grade_components
     FOR EACH ROW
 EXECUTE FUNCTION school.check_gc_parent_match();
+
+-- 5. STUDENT NO GENERATION (Logic: <Year><SeqPadded>)
+CREATE SEQUENCE IF NOT EXISTS school.student_no_seq START 1;
+
+CREATE OR REPLACE FUNCTION school.generate_student_no()
+    RETURNS TRIGGER AS $$
+DECLARE
+    v_year_prefix TEXT;
+    v_seq_num     BIGINT;
+    v_seq_str     TEXT;
+BEGIN
+    IF NEW.student_no IS NULL THEN
+        v_year_prefix := TO_CHAR(NOW(), 'YYYY');
+        v_seq_num := NEXTVAL('school.student_no_seq');
+        v_seq_str := v_seq_num::TEXT;
+        NEW.student_no := (
+            v_year_prefix ||
+            LPAD(v_seq_str, GREATEST(5, LENGTH(v_seq_str)), '0')
+            )::BIGINT;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_generate_student_no ON school.students;
+
+CREATE TRIGGER trg_generate_student_no
+    BEFORE INSERT ON school.students
+    FOR EACH ROW
+EXECUTE FUNCTION school.generate_student_no();
 
 -- =============================================================================
 -- INITIALIZE ADMIN ACCOUNT

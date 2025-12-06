@@ -29,5 +29,6 @@ class Professor(
     var employeeType: EmployeeType,
 
     @Column(name = "prof_hired_at")
-    var hiredAt: LocalDateTime = LocalDateTime.now()
+    var hiredAt: LocalDateTime = LocalDateTime.now(),
+    account: Account
 )

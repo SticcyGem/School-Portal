@@ -25,16 +25,17 @@ class Enrollment(
     @Column(name = "enrollment_status", columnDefinition = "school.enrollment_status_enum")
     var enrollmentStatus: EnrollmentStatus = EnrollmentStatus.DRAFT,
 
+    @Column(name = "remarks", length = 500)
+    var remarks: String? = null,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
     var studentAccount: Account,
 
-    // The Term (e.g., 1st Sem 2025-2026)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "academic_term_no", nullable = false)
     var term: AcademicTerm,
 
-    // The List of Subjects/Sections for this enrollment
     @OneToMany(mappedBy = "enrollment", cascade = [CascadeType.ALL], orphanRemoval = true)
     var sections: MutableSet<EnrollmentSection> = mutableSetOf()
 )
