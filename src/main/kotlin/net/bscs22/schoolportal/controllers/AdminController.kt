@@ -5,6 +5,7 @@ import net.bscs22.schoolportal.dtos.auth.RegisterProfessorRequest
 import net.bscs22.schoolportal.dtos.auth.RegisterStudentRequest
 import net.bscs22.schoolportal.dtos.subject.CreateSubjectRequest
 import net.bscs22.schoolportal.dtos.subject.UpdateSubjectRequest
+import net.bscs22.schoolportal.dtos.user.AdminResetPasswordRequest
 import net.bscs22.schoolportal.dtos.user.UpdateUserRequest
 import net.bscs22.schoolportal.dtos.user.UserResponse
 import net.bscs22.schoolportal.services.AccountService
@@ -132,6 +133,20 @@ class AdminController(
             ResponseEntity.ok(mapOf("message" to msg))
         } catch (_: DataIntegrityViolationException) {
             ResponseEntity.badRequest().body(mapOf("error" to "Cannot delete subject: It is currently in use."))
+        } catch (e: Exception) {
+            ResponseEntity.badRequest().body(mapOf("error" to e.message))
+        }
+    }
+
+    // --- PASSWORD RESET ---
+    @PutMapping("/users/{accountId}/password")
+    fun resetUserPassword(
+        @PathVariable accountId: UUID,
+        @RequestBody req: AdminResetPasswordRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val msg = accountService.adminResetPassword(accountId, req.newPass)
+            ResponseEntity.ok(mapOf("message" to msg))
         } catch (e: Exception) {
             ResponseEntity.badRequest().body(mapOf("error" to e.message))
         }

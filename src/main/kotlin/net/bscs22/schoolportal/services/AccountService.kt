@@ -36,7 +36,7 @@ class AccountService(
         }
     }
 
-    // --- CHANGE PASSWORD ---
+    // --- CHANGE PASSWORD: USER ---
     @Transactional
     fun changePassword(accountId: UUID, oldPass: String, newPass: String): String {
         val account = accountRepository.findById(accountId)
@@ -50,6 +50,18 @@ class AccountService(
         accountRepository.save(account)
 
         return "Password updated successfully"
+    }
+
+    // --- CHANGE PASSWORD: ADMIN ---
+    @Transactional
+    fun adminResetPassword(targetAccountId: UUID, newPass: String): String {
+        val account = accountRepository.findById(targetAccountId)
+            .orElseThrow { IllegalArgumentException("Account not found") }
+
+        account.passwordHash = passwordEncoder.encode(newPass)
+        accountRepository.save(account)
+
+        return "Password successfully reset for user: ${account.email}"
     }
 
     // --- UPDATE ACCOUNT DETAILS ---
