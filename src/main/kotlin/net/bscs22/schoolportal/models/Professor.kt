@@ -13,7 +13,12 @@ import java.util.UUID
 class Professor(
     @Id
     @Column(name = "account_id")
-    var accountId: UUID? = null,
+    var accountId: UUID,
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "account_id")
+    var account: Account? = null,
 
     @Column(name = "professor_id", unique = true, nullable = false)
     var professorId: String,
@@ -29,6 +34,5 @@ class Professor(
     var employeeType: EmployeeType,
 
     @Column(name = "prof_hired_at")
-    var hiredAt: LocalDateTime = LocalDateTime.now(),
-    account: Account
+    var hiredAt: LocalDateTime = LocalDateTime.now()
 )

@@ -1,12 +1,9 @@
 package net.bscs22.schoolportal.services
 
+import net.bscs22.schoolportal.dtos.auth.*
+import net.bscs22.schoolportal.mappers.AuthMapper
 import net.bscs22.schoolportal.models.Account
-import net.bscs22.schoolportal.models.Professor
-import net.bscs22.schoolportal.models.Student
 import net.bscs22.schoolportal.models.UserProfile
-import net.bscs22.schoolportal.models.enums.EducationLevel
-import net.bscs22.schoolportal.models.enums.EmployeeType
-import net.bscs22.schoolportal.models.enums.StudentType
 import net.bscs22.schoolportal.repositories.*
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -22,190 +19,110 @@ class AuthService(
     private val jwtService: JwtService,
     private val studentDetailRepository: StudentDetailRepository,
     private val professorDetailRepository: ProfessorDetailRepository,
-    // Note: Assuming you have RoleRepository or similar available to fetch roles by name/ID
+    private val authMapper: AuthMapper
 ) {
 
-    fun authenticate(email: String, pass: String): Map<String, Any>? {
-        val account = accountRepository.findByEmail(email) ?: return null
+    // --- LOGIN ---
+    fun authenticate(req: LoginRequest): AuthResponse? {
+        val account = accountRepository.findByEmail(req.email) ?: return null
 
-        // 1. Validate Password
-        if (!passwordEncoder.matches(pass, account.passwordHash)) {
+        if (!passwordEncoder.matches(req.password, account.passwordHash)) {
             return null
         }
 
-        // 2. Generate Token
         val roleName = account.roles.firstOrNull()?.roleName ?: "USER"
-
-        val token = jwtService.generateToken(
-            account.email,
-            account.accountId,
-            roleName
-        )
-
-        // 3. Determine Role & Fetch Profile View
+        val token = jwtService.generateToken(account.email, account.accountId, roleName)
         val roles = account.roles.map { it.roleName }
-        var profileData: Any? = null
 
-        if (roles.contains("STUDENT")) {
-            profileData = studentDetailRepository.findById(account.accountId).orElse(null)
-        } else if (roles.contains("PROFESSOR")) {
-            profileData = professorDetailRepository.findById(account.accountId).orElse(null)
-        } else {
-            // Fallback for Admin or basic users
-            val basicProfile = userProfileRepository.findById(account.accountId).orElse(null)
-            profileData = mapOf(
-                "name" to "${basicProfile?.lastName}, ${basicProfile?.firstName}",
-                "email" to account.email
-            )
+        val profileData: Any? = when {
+            roles.contains("STUDENT") -> studentDetailRepository.findById(account.accountId).orElse(null)
+            roles.contains("PROFESSOR") -> professorDetailRepository.findById(account.accountId).orElse(null)
+            else -> {
+                val p = userProfileRepository.findById(account.accountId).orElse(null)
+                if (p != null) mapOf("name" to "${p.lastName}, ${p.firstName}", "email" to account.email) else null
+            }
         }
 
-        return mapOf(
-            "token" to token,
-            "roles" to roles,
-            "accountId" to account.accountId,
-            "profile" to (profileData ?: "Profile not found")
-        )
+        return AuthResponse(token, roles, account.accountId, profileData)
     }
 
+    // --- REGISTER STUDENT ---
     @Transactional
-    fun registerStudent(
-        email: String,
-        rawPassword: String,
-        firstName: String,
-        middleName: String?,
-        lastName: String,
-        studentNo: Long?,
-        educationLevel: EducationLevel,
-        studentType: StudentType,
-        courseCode: String,
-        blockNo: Long?
-    ): String {
-        if (accountRepository.existsByEmail(email)) {
-            throw IllegalArgumentException("Email already in use")
-        }
-        if (studentNo != null && studentRepository.existsByStudentNo(studentNo)) {
+    fun registerStudent(req: RegisterStudentRequest): String {
+        if (req.studentNo != null && studentRepository.existsByStudentNo(req.studentNo)) {
             throw IllegalArgumentException("Student No already in use")
         }
 
-        // 1. Create base Account
-        val account = Account(
-            email = email,
-            passwordHash = passwordEncoder.encode(rawPassword)
+        val savedAccount = createBaseAccount(
+            account = authMapper.toAccount(req),
+            profile = authMapper.toUserProfile(req),
+            rawPassword = req.password,
+            roleId = 1L
         )
 
-        // 2. SAVE ACCOUNT FIRST and CAPTURE the result
-        // This ensures 'savedAccount' is the strictly managed entity with the generated ID
-        val savedAccount = accountRepository.save(account)
-
-        // 3. Create UserProfile using 'savedAccount'
-        // Since we added Persistable, Hibernate will now correctly INSERT this.
-        val profile = UserProfile(
-            accountId = savedAccount.accountId,
-            account = savedAccount, // Link the SAVED entity
-            firstName = firstName,
-            middleName = middleName,
-            lastName = lastName
-        )
-
-        // 4. Create Student using 'savedAccount'
-        val student = Student(
-            accountId = savedAccount.accountId,
-            account = savedAccount, // Link the SAVED entity
-            studentNo = studentNo,
-            educationLevel = educationLevel,
-            studentType = studentType,
-            courseCode = courseCode,
-            blockNo = blockNo
-        )
-
-        // 5. Save Dependents
-        userProfileRepository.save(profile)
+        val student = authMapper.toStudent(req)
+        student.account = savedAccount
+        student.accountId = savedAccount.accountId
         studentRepository.save(student)
 
-        // 6. Add Role
-        accountRepository.addRole(savedAccount.accountId, 1L)
-
-        return if (studentNo != null) "Student created: $studentNo" else "Student created (ID pending generation)"
+        return "Student created: ${req.studentNo ?: "ID Pending"}"
     }
 
+    // --- REGISTER PROFESSOR ---
     @Transactional
-    fun registerProfessor(
-        email: String,
-        rawPassword: String,
-        firstName: String,
-        lastName: String,
-        professorId: String,
-        employeeType: EmployeeType
-    ): String {
-        if (accountRepository.existsByEmail(email)) {
-            throw IllegalArgumentException("Email already in use")
-        }
-        if (professorRepository.existsByProfessorId(professorId)) {
-            throw IllegalArgumentException("Professor ID already in use")
+    fun registerProfessor(req: RegisterProfessorRequest): String {
+        if (professorRepository.existsByProfessorId(req.professorId)) {
+            throw IllegalArgumentException("Professor ID exists")
         }
 
-        // 1. Create Account
-        val account = Account(email = email, passwordHash = passwordEncoder.encode(rawPassword))
-
-        // 2. Create UserProfile, linking Account
-        val profile = UserProfile(
-            accountId = account.accountId,
-            account = account, // CRITICAL: Link the Account entity reference
-            firstName = firstName,
-            lastName = lastName
+        val savedAccount = createBaseAccount(
+            account = authMapper.toAccount(req),
+            profile = authMapper.toUserProfile(req),
+            rawPassword = req.password,
+            roleId = 2L
         )
 
-        // 3. Create Professor, linking Account
-        val professor = Professor(
-            accountId = account.accountId,
-            account = account, // CRITICAL: Link the Account entity reference (Assuming Professor.kt uses @MapsId)
-            professorId = professorId,
-            employeeType = employeeType
-        )
-
-        // 4. Persistence
-        accountRepository.save(account)
-        userProfileRepository.save(profile)
+        val professor = authMapper.toProfessor(req)
+        professor.account = savedAccount
+        professor.accountId = savedAccount.accountId
         professorRepository.save(professor)
 
-        // 5. Add Role
-        accountRepository.addRole(account.accountId, 2L)
-        return "Professor created: $professorId"
+        return "Professor created: ${req.professorId}"
     }
 
+    // --- REGISTER ADMIN ---
     @Transactional
-    fun registerAdmin(
-        email: String,
+    fun registerAdmin(req: RegisterAdminRequest): String {
+        val savedAccount = createBaseAccount(
+            account = authMapper.toAccount(req),
+            profile = authMapper.toUserProfile(req),
+            rawPassword = req.password,
+            roleId = 3L
+        )
+
+        return "Admin created: ${req.email}"
+    }
+
+    // --- PRIVATE HELPER ---
+    private fun createBaseAccount(
+        account: Account,
+        profile: UserProfile,
         rawPassword: String,
-        firstName: String,
-        lastName: String
-    ): String {
-        if (accountRepository.existsByEmail(email)) {
+        roleId: Long
+    ): Account {
+        if (accountRepository.existsByEmail(account.email)) {
             throw IllegalArgumentException("Email already in use")
         }
 
-        // 1. Create Account
-        val newAccount = Account(
-            email = email,
-            passwordHash = passwordEncoder.encode(rawPassword)
-        )
+        account.passwordHash = passwordEncoder.encode(rawPassword)
+        val savedAccount = accountRepository.save(account)
 
-        // 2. Create UserProfile, linking Account
-        val profile = UserProfile(
-            accountId = newAccount.accountId,
-            account = newAccount, // CRITICAL: Link the Account entity reference
-            firstName = firstName,
-            lastName = lastName
-        )
-
-        // 3. Persistence
-        val savedAccount = accountRepository.save(newAccount)
+        profile.account = savedAccount
+        profile.accountId = savedAccount.accountId
         userProfileRepository.save(profile)
 
-        // 4. Add Role
-        savedAccount.accountId.let { id ->
-            accountRepository.addRole(id, 3L)
-        }
-        return "Admin account created successfully for ${savedAccount.email}"
+        accountRepository.addRole(savedAccount.accountId, roleId)
+
+        return savedAccount
     }
 }

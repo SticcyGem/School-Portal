@@ -1,5 +1,7 @@
 package net.bscs22.schoolportal.controllers
 
+import net.bscs22.schoolportal.dtos.auth.AuthResponse // Import the new DTO
+import net.bscs22.schoolportal.dtos.auth.LoginRequest // Import the new DTO
 import net.bscs22.schoolportal.services.AuthService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -11,18 +13,18 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/auth")
 class LoginController(private val authService: AuthService) {
 
-    data class LoginRequest(val email: String, val password: String)
-    data class LoginResponse(val message: String, val payload: Map<String, Any>? = null)
+    // Helper wrapper for consistent JSON responses
+    data class ApiResponse<T>(val message: String, val data: T? = null)
 
     @PostMapping("/login")
-    fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
-        val authResult = authService.authenticate(
-            request.email,
-            request.password)
+    fun login(@RequestBody request: LoginRequest): ResponseEntity<ApiResponse<AuthResponse>> {
+        // FIX: Pass the WHOLE request object, not separate fields
+        val authResult = authService.authenticate(request)
+
         return if (authResult != null) {
-            ResponseEntity.ok(LoginResponse("Login Successful", authResult))
+            ResponseEntity.ok(ApiResponse("Login Successful", authResult))
         } else {
-            ResponseEntity.status(401).body(LoginResponse("Invalid credentials"))
+            ResponseEntity.status(401).body(ApiResponse("Invalid credentials"))
         }
     }
 }
