@@ -5,6 +5,9 @@ import net.bscs22.schoolportal.dtos.user.UserResponse
 import net.bscs22.schoolportal.mappers.UserMapper
 import net.bscs22.schoolportal.repositories.AccountRepository
 import net.bscs22.schoolportal.repositories.UserProfileRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,12 +22,12 @@ class AccountService(
 ) {
     // --- SEARCH ---
     @Transactional(readOnly = true)
-    fun searchUsers(query: String): List<UserResponse> {
-        val accounts = accountRepository.searchAccounts(query)
+    fun searchUsers(query: String, page: Int, size: Int): Page<UserResponse> {
+        val pageable = PageRequest.of(page, size, Sort.by("email").ascending())
+        val accountsPage = accountRepository.searchAccounts(query, pageable)
 
-        return accounts.mapNotNull { account ->
+        return accountsPage.map { account ->
             val profile = userProfileRepository.findById(account.accountId).orElse(null)
-
             if (profile != null) {
                 userMapper.toUserResponse(account, profile)
             } else {

@@ -11,9 +11,11 @@ import net.bscs22.schoolportal.services.AccountService
 import net.bscs22.schoolportal.services.AuthService
 import net.bscs22.schoolportal.services.SubjectService
 import org.springframework.dao.DataIntegrityViolationException
+import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.util.*
+import java.util.UUID
+import kotlin.math.min
 
 @RestController
 @RequestMapping("/api/admin")
@@ -26,9 +28,14 @@ class AdminController(
     // --- SEARCH ENDPOINT ---
 
     @GetMapping("/users/search")
-    fun searchUsers(@RequestParam("q") query: String): ResponseEntity<List<UserResponse>> {
-        val results = accountService.searchUsers(query)
-        return ResponseEntity.ok(results)
+    fun searchUsers(
+        @RequestParam("q") query: String,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ResponseEntity<Page<UserResponse>> {
+        val safeSize = min(size, 20)
+        val userPage = accountService.searchUsers(query, page, safeSize)
+        return ResponseEntity.ok(userPage)
     }
 
     // --- REGISTER ENDPOINTS ---
