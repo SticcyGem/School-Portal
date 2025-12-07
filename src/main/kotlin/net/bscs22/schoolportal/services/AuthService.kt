@@ -39,7 +39,10 @@ class AuthService(
             roles.contains("PROFESSOR") -> professorDetailRepository.findById(account.accountId).orElse(null)
             else -> {
                 val p = userProfileRepository.findById(account.accountId).orElse(null)
-                if (p != null) mapOf("name" to "${p.lastName}, ${p.firstName}", "email" to account.email) else null
+                if (p != null) mapOf(
+                    "name" to "${p.lastName}, ${p.firstName}",
+                    "email" to account.email
+                ) else null
             }
         }
 
@@ -53,8 +56,10 @@ class AuthService(
             throw IllegalArgumentException("Student No already in use")
         }
 
+        val account = authMapper.toAccount(req)
+
         val savedAccount = createBaseAccount(
-            account = authMapper.toAccount(req),
+            account = account,
             profile = authMapper.toUserProfile(req),
             rawPassword = req.password,
             roleId = 1L
@@ -71,12 +76,14 @@ class AuthService(
     // --- REGISTER PROFESSOR ---
     @Transactional
     fun registerProfessor(req: RegisterProfessorRequest): String {
-        if (professorRepository.existsByProfessorId(req.professorId)) {
+        if (req.professorId != null && professorRepository.existsByProfessorId(req.professorId)) {
             throw IllegalArgumentException("Professor ID exists")
         }
 
+        val account = authMapper.toAccount(req)
+
         val savedAccount = createBaseAccount(
-            account = authMapper.toAccount(req),
+            account = account,
             profile = authMapper.toUserProfile(req),
             rawPassword = req.password,
             roleId = 2L
@@ -87,14 +94,16 @@ class AuthService(
         professor.accountId = savedAccount.accountId
         professorRepository.save(professor)
 
-        return "Professor created: ${req.professorId}"
+        return "Professor created: ${req.professorId ?: "ID Pending"}"
     }
 
     // --- REGISTER ADMIN ---
     @Transactional
     fun registerAdmin(req: RegisterAdminRequest): String {
-        val savedAccount = createBaseAccount(
-            account = authMapper.toAccount(req),
+        val account = authMapper.toAccount(req)
+
+        createBaseAccount(
+            account = account,
             profile = authMapper.toUserProfile(req),
             rawPassword = req.password,
             roleId = 3L
@@ -115,6 +124,7 @@ class AuthService(
         }
 
         account.passwordHash = passwordEncoder.encode(rawPassword)
+
         val savedAccount = accountRepository.save(account)
 
         profile.account = savedAccount

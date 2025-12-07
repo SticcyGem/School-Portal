@@ -681,7 +681,7 @@ INSERT INTO school.rooms (room_name, room_capacity, room_type, building_no) VALU
 -- TRIGGERS (DATA INTEGRITY)
 -- =============================================================================
 
--- 1. GRADE PERCENTAGE LIMIT (Cannot Exceed 100%)
+-- GRADE PERCENTAGE 100% LIMIT
 CREATE OR REPLACE FUNCTION school.check_grade_percentage_limit()
     RETURNS TRIGGER AS $$
 DECLARE
@@ -713,7 +713,46 @@ CREATE TRIGGER trg_enforce_max_percent
     FOR EACH ROW
 EXECUTE FUNCTION school.check_grade_percentage_limit();
 
--- 2. PROFESSOR CLONING CHECK (Overlap Prevention)
+-- STUDENT SCHEDULE OVERLAP CHECK
+CREATE OR REPLACE FUNCTION school.check_student_schedule_conflict()
+    RETURNS TRIGGER AS $$
+DECLARE
+    conflict_data RECORD;
+BEGIN
+    -- Find if the schedule of the NEW section overlaps with any EXISTING section in this enrollment
+    SELECT es.section_no, s_existing.day_name, s_existing.start_time, s_existing.end_time
+    INTO conflict_data
+    FROM school.enrollment_sections es
+             -- Get schedules of existing sections enrolled by this student (in this enrollment record)
+             JOIN school.schedules s_existing ON es.section_no = s_existing.section_no
+        -- Get schedules of the NEW section attempting to be added
+             JOIN school.schedules s_new ON s_new.section_no = NEW.section_no
+    WHERE es.enrollment_no = NEW.enrollment_no
+      -- Conflict Condition: Same Day + Overlapping Time Ranges
+      AND s_existing.day_name = s_new.day_name
+      AND (s_new.start_time < s_existing.end_time AND s_new.end_time > s_existing.start_time)
+    LIMIT 1;
+
+    IF FOUND THEN
+        RAISE EXCEPTION 'Schedule Conflict: Cannot enroll in Section %. It overlaps with existing Section % on % (% to %)',
+            NEW.section_no,
+            conflict_data.section_no,
+            conflict_data.day_name,
+            conflict_data.start_time,
+            conflict_data.end_time;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_student_schedule ON school.enrollment_sections;
+
+CREATE TRIGGER trg_check_student_schedule
+    BEFORE INSERT ON school.enrollment_sections
+    FOR EACH ROW
+EXECUTE FUNCTION school.check_student_schedule_conflict();
+
+-- 2. PROFESSOR SCHEDULE OVERLOP CHECK
 CREATE OR REPLACE FUNCTION school.check_professor_schedule_conflict()
     RETURNS TRIGGER AS $$
 DECLARE
@@ -834,6 +873,37 @@ CREATE TRIGGER trg_generate_student_no
     BEFORE INSERT ON school.students
     FOR EACH ROW
 EXECUTE FUNCTION school.generate_student_no();
+
+-- 6. PROFESSOR ID GENERATION (Logic: P<Year><SeqPadded>)
+CREATE SEQUENCE IF NOT EXISTS school.professor_id_seq START 1;
+
+CREATE OR REPLACE FUNCTION school.generate_professor_id()
+    RETURNS TRIGGER AS $$
+DECLARE
+    v_year_prefix TEXT;
+    v_seq_num     BIGINT;
+    v_seq_str     TEXT;
+BEGIN
+    IF NEW.professor_id IS NULL OR NEW.professor_id = '' THEN
+        v_year_prefix := TO_CHAR(NOW(), 'YYYY');
+        v_seq_num := NEXTVAL('school.professor_id_seq');
+        v_seq_str := v_seq_num::TEXT;
+        NEW.professor_id := (
+            'P' ||
+            v_year_prefix ||
+            LPAD(v_seq_str, GREATEST(4, LENGTH(v_seq_str)), '0')
+            );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_generate_professor_id ON school.professors;
+
+CREATE TRIGGER trg_generate_professor_id
+    BEFORE INSERT ON school.professors
+    FOR EACH ROW
+EXECUTE FUNCTION school.generate_professor_id();
 
 -- =============================================================================
 -- INITIALIZE ADMIN ACCOUNT

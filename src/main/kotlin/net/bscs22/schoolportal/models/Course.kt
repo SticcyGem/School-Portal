@@ -20,9 +20,10 @@ class Course(
     @Column(name = "course_tier", columnDefinition = "school.education_level_enum", nullable = false)
     var courseTier: EducationLevel,
 
+    // FIX APPLIED HERE:
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "college_code", nullable = false)
-    var college: College,
+    var college: College? = null,
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

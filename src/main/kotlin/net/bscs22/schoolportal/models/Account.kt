@@ -5,6 +5,7 @@ import net.bscs22.schoolportal.models.enums.AccountStatus
 import net.bscs22.schoolportal.models.enums.AuthProvider
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import org.springframework.data.domain.Persistable
 import java.util.UUID
 
 @Entity
@@ -38,4 +39,20 @@ class Account(
         inverseJoinColumns = [JoinColumn(name = "role_no")]
     )
     var roles: MutableSet<Role> = mutableSetOf()
-)
+) : Persistable<UUID> {
+    @OneToOne(mappedBy = "account", cascade = [CascadeType.REMOVE, CascadeType.REFRESH])
+    var profile: UserProfile? = null
+
+    @Transient
+    private var isNewEntry: Boolean = true
+
+    override fun getId(): UUID = accountId
+
+    override fun isNew(): Boolean = isNewEntry
+
+    @PostLoad
+    @PostPersist
+    fun markNotNew() {
+        isNewEntry = false
+    }
+}

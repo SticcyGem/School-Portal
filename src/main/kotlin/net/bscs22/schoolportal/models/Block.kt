@@ -18,5 +18,5 @@ class Block(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_code", nullable = false)
-    var course: Course
+    var course: Course? = null
 )

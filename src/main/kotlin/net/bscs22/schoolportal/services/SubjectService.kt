@@ -20,8 +20,8 @@ class SubjectService(
     fun createSubject(
         subjectCode: String,
         subjectName: String,
-        lecUnits: Long,
-        labUnits: Long
+        lecUnits: Int,
+        labUnits: Int
     ): Subject {
         if (subjectRepository.existsById(subjectCode)) {
             throw IllegalArgumentException("Subject code '$subjectCode' already exists.")
@@ -30,8 +30,8 @@ class SubjectService(
         val newSubject = Subject(
             subjectCode = subjectCode,
             subjectName = subjectName,
-            lecUnits = lecUnits,
-            labUnits = labUnits
+            lecUnits = lecUnits.toLong(), // Fix: Convert Int to Long
+            labUnits = labUnits.toLong()  // Fix: Convert Int to Long
         )
         return subjectRepository.save(newSubject)
     }
@@ -41,16 +41,16 @@ class SubjectService(
     fun updateSubject(
         code: String,
         subjectName: String,
-        lecUnits: Long,
-        labUnits: Long
+        lecUnits: Int,
+        labUnits: Int
     ): Subject {
         val subject = subjectRepository.findById(code)
             .orElseThrow { IllegalArgumentException("Subject '$code' not found.") }
 
         // Update fields
         subject.subjectName = subjectName
-        subject.lecUnits = lecUnits
-        subject.labUnits = labUnits
+        subject.lecUnits = lecUnits.toLong() // Fix: Convert Int to Long
+        subject.labUnits = labUnits.toLong() // Fix: Convert Int to Long
 
         return subjectRepository.save(subject)
     }

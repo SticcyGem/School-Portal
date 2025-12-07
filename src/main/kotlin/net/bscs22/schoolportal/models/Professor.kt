@@ -5,6 +5,7 @@ import net.bscs22.schoolportal.models.enums.EmployeeType
 import net.bscs22.schoolportal.models.enums.ProfessorStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import org.springframework.data.domain.Persistable
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -13,15 +14,14 @@ import java.util.UUID
 class Professor(
     @Id
     @Column(name = "account_id")
-    var accountId: UUID,
+    var accountId: UUID? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
     var account: Account? = null,
 
-    @Column(name = "professor_id", unique = true, nullable = false)
-    var professorId: String,
+    @Column(name = "professor_id", unique = true)
+    var professorId: String? = null,
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -31,8 +31,22 @@ class Professor(
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "employee_type", columnDefinition = "school.employee_type_enum")
-    var employeeType: EmployeeType,
+    var employeeType: EmployeeType? = null,
 
     @Column(name = "prof_hired_at")
     var hiredAt: LocalDateTime = LocalDateTime.now()
-)
+
+) : Persistable<UUID> {
+    @Transient
+    private var isNewEntry: Boolean = true
+
+    override fun getId(): UUID? = accountId
+
+    override fun isNew(): Boolean = isNewEntry
+
+    @PostLoad
+    @PostPersist
+    fun markNotNew() {
+        isNewEntry = false
+    }
+}

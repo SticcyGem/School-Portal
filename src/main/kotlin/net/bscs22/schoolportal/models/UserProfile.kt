@@ -1,7 +1,7 @@
 package net.bscs22.schoolportal.models
 
 import jakarta.persistence.*
-import org.springframework.data.domain.Persistable // Import this!
+import org.springframework.data.domain.Persistable
 import java.util.UUID
 
 @Entity
@@ -9,7 +9,7 @@ import java.util.UUID
 class UserProfile(
     @Id
     @Column(name = "account_id")
-    var accountId: UUID,
+    var accountId: UUID? = null,
 
     @Column(name = "first_name", nullable = false)
     var firstName: String,
@@ -21,21 +21,17 @@ class UserProfile(
     var lastName: String,
 
     @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "account_id", insertable = false, updatable = false)
     var account: Account? = null
-) : Persistable<UUID> { // <--- 1. Implement Interface
 
-    // 2. Add a transient flag to track state
+) : Persistable<UUID> {
     @Transient
     private var isNewEntry: Boolean = true
 
-    // 3. Override standard methods
     override fun getId(): UUID? = accountId
 
     override fun isNew(): Boolean = isNewEntry
 
-    // 4. Update flag after saving or loading
     @PostLoad
     @PostPersist
     fun markNotNew() {

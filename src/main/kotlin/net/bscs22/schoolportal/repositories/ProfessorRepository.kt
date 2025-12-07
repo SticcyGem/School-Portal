@@ -7,5 +7,5 @@ import java.util.UUID
 
 @Repository
 interface ProfessorRepository : JpaRepository<Professor, UUID> {
-    fun existsByProfessorId(professorId: String): Boolean
+    fun existsByProfessorId(professorId: String?): Boolean
 }

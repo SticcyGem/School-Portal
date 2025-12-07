@@ -1,7 +1,8 @@
 package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.controllers.EnrollmentController.EnrollmentOfferingResponse
-import net.bscs22.schoolportal.controllers.EnrollmentController.SectionDTO
+import net.bscs22.schoolportal.dtos.enrollment.EnrollmentOfferingResponse
+import net.bscs22.schoolportal.dtos.enrollment.SectionOfferingResponse
+import net.bscs22.schoolportal.mappers.EnrollmentMapper
 import net.bscs22.schoolportal.models.*
 import net.bscs22.schoolportal.models.enums.EnrollmentStatus
 import net.bscs22.schoolportal.models.enums.StudentStatus
@@ -19,12 +20,11 @@ class EnrollmentService(
     private val sectionRepository: SectionRepository,
     private val enrollmentRepository: EnrollmentRepository,
     private val creditedSubjectRepository: CreditedSubjectRepository,
-    private val subjectRepository: SubjectRepository,
-    // Ensure this repository name matches the interface you created (PendingEnrollmentDetailRepository)
-    private val pendingEnrollmentRepository: PendingEnrollmentDetailRepository
+    private val pendingEnrollmentRepository: PendingEnrollmentDetailRepository,
+    private val enrollmentMapper: EnrollmentMapper
 ) {
 
-    // --- DTOs for Admin Approval Screen ---
+    // DTO for Admin Approval (Inner class is fine here if specific to this logic, or move to DTO package)
     data class AdminEnrollmentDetailDTO(
         val enrollmentNo: Long,
         val studentName: String,
@@ -43,6 +43,7 @@ class EnrollmentService(
     )
 
     // 1. GET OFFERINGS
+    @Transactional(readOnly = true) // Added readOnly for performance
     fun getEnrollmentOptions(accountId: UUID): EnrollmentOfferingResponse {
         val student = studentRepository.findById(accountId)
             .orElseThrow { IllegalArgumentException("Student record not found") }
@@ -50,7 +51,6 @@ class EnrollmentService(
         val currentTerm = termRepository.findActiveEnrollmentTerm()
             ?: throw IllegalStateException("No active enrollment period found.")
 
-        // FIX: Fetch sections properly using the academic term
         val availableSections = sectionRepository.findByAcademicTerm_AcademicTermNo(
             currentTerm.academicTermNo!!
         )
@@ -59,20 +59,24 @@ class EnrollmentService(
             accountId, currentTerm.academicTermNo!!
         )
 
+        val sectionDTOs = availableSections.map { enrollmentMapper.toSectionOfferingResponse(it) }
+
         return EnrollmentOfferingResponse(
             termName = currentTerm.termName,
             studentType = student.studentType.name,
             isBlockBased = (student.studentType == StudentType.REGULAR),
             enrollmentStatus = existingEnrollment?.enrollmentStatus?.name ?: "NONE",
             remarks = existingEnrollment?.remarks,
-            sections = availableSections.map { toSectionDTO(it) }
+            sections = sectionDTOs
         )
     }
 
-    // 2. SUBMIT ENROLLMENT (DRAFT MODE)
+    // 2. SUBMIT ENROLLMENT
     @Transactional
     fun submitEnrollment(accountId: UUID, sectionIds: List<Long>): String {
-        val account = accountRepository.findById(accountId).get()
+        val account = accountRepository.findById(accountId)
+            .orElseThrow { IllegalArgumentException("Account not found") }
+
         val currentTerm = termRepository.findActiveEnrollmentTerm()
             ?: throw IllegalStateException("Enrollment is closed.")
 
@@ -104,6 +108,7 @@ class EnrollmentService(
             if (enrollment.enrollmentStatus == EnrollmentStatus.ENROLLED) {
                 throw IllegalArgumentException("You are already officially enrolled. Changes must be made by an admin.")
             }
+            // Clear existing for update
             enrollment.sections.clear()
             enrollment.remarks = null
             enrollment.enrollmentStatus = EnrollmentStatus.DRAFT
@@ -119,7 +124,8 @@ class EnrollmentService(
             enrollment.sections.add(
                 EnrollmentSection(
                     enrollment = enrollment,
-                    section = section
+                    section = section,
+                    subjectStatus = net.bscs22.schoolportal.models.enums.SubjectStatus.ENROLLED // Ensure default status
                 )
             )
         }
@@ -141,9 +147,12 @@ class EnrollmentService(
         enrollment.sections.forEach { enrollmentSection ->
             val section = enrollmentSection.section
                 ?: throw IllegalStateException("Data Error: Enrollment has a missing section reference.")
+
+            // Double check slots before committing
             if (section.availableSlots <= 0) {
                 throw IllegalStateException("Cannot approve: Section ${section.sectionNo} (${section.subject.subjectCode}) is FULL.")
             }
+
             section.availableSlots -= 1
             sectionRepository.save(section)
         }
@@ -178,10 +187,8 @@ class EnrollmentService(
         return "Enrollment rejected. Reason logged."
     }
 
-    // =========================================================================
-    // FEATURE: ADMIN - LIST PENDING ENROLLMENTS
-    // =========================================================================
 
+    // 5. ADMIN LIST PENDING
     @Transactional(readOnly = true)
     fun getPendingEnrollments(): List<AdminEnrollmentDetailDTO> {
         val rawData = pendingEnrollmentRepository.findAll()
@@ -190,6 +197,9 @@ class EnrollmentService(
             val firstRecord = records.first()
             val totalUnits = records.sumOf { it.units }
 
+            // USE MAPPER HERE
+            val sectionDTOs = records.map { enrollmentMapper.toSectionApprovalDTO(it) }
+
             AdminEnrollmentDetailDTO(
                 enrollmentNo = enrollmentNo,
                 studentName = firstRecord.studentName,
@@ -197,23 +207,12 @@ class EnrollmentService(
                 courseCode = firstRecord.courseCode,
                 termName = firstRecord.termName,
                 totalUnits = totalUnits,
-
-                sections = records.map { record ->
-                    SectionApprovalDTO(
-                        sectionNo = record.sectionNo,
-                        subjectCode = record.subjectCode,
-
-                        // FIX #1: Use correct property names from PendingEnrollmentDetail entity
-                        subjectTitle = record.subjectName,
-                        schedule = record.fullSchedule ?: "TBA"
-                    )
-                }
+                sections = sectionDTOs
             )
         }
     }
 
-    // --- HELPERS ---
-
+    // --- HELPER: LOGIC (Not Mapping) ---
     private fun checkScheduleConflicts(sections: List<Section>) {
         val allSchedules = sections.flatMap { sec ->
             sec.schedules.map { sched -> sec to sched }
@@ -233,31 +232,5 @@ class EnrollmentService(
                 }
             }
         }
-    }
-
-    private fun toSectionDTO(section: Section): SectionDTO {
-        val schedString = section.schedules.joinToString(", ") {
-            "${it.dayName} ${it.startTime}-${it.endTime} (${it.room.roomName})"
-        }
-
-        // FIX #2: Correctly traverse Section -> SectionBlock -> Block -> Course
-        val sectionName = section.blocks.firstOrNull()?.let { sectionBlock ->
-            val block = sectionBlock.block
-            if (block != null && block.course != null) {
-                "${block.course!!.courseCode} ${block.yearLevel}-${block.blockNumber}"
-            } else {
-                "Unknown Block"
-            }
-        } ?: "Open Section"
-
-        return SectionDTO(
-            sectionNo = section.sectionNo!!,
-            sectionName = sectionName,
-            subjectCode = section.subject.subjectCode,
-            subjectTitle = section.subject.subjectName,
-            units = section.subject.lecUnits + section.subject.labUnits,
-            schedule = schedString,
-            status = if(section.availableSlots > 0) "OPEN" else "FULL"
-        )
     }
 }
