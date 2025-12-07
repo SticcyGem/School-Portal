@@ -17,6 +17,23 @@ class AccountService(
     private val passwordEncoder: PasswordEncoder,
     private val userMapper: UserMapper
 ) {
+    // --- SEARCH ---
+    @Transactional(readOnly = true)
+    fun searchUsers(query: String): List<UserResponse> {
+        val accounts = accountRepository.searchAccounts(query)
+
+        return accounts.mapNotNull { account ->
+            val profile = userProfileRepository.findById(account.accountId).orElse(null)
+
+            if (profile != null) {
+                userMapper.toUserResponse(account, profile)
+            } else {
+                null
+            }
+        }
+    }
+
+    // --- CHANGE PASSWORD ---
     @Transactional
     fun changePassword(accountId: UUID, oldPass: String, newPass: String): String {
         val account = accountRepository.findById(accountId)
@@ -32,6 +49,7 @@ class AccountService(
         return "Password updated successfully"
     }
 
+    // --- UPDATE ACCOUNT DETAILS ---
     @Transactional
     fun updateAccountDetails(targetAccountId: UUID, req: UpdateUserRequest): String {
         val account = accountRepository.findById(targetAccountId)
@@ -55,6 +73,7 @@ class AccountService(
         return "Account details updated for ${account.email}"
     }
 
+    // --- GET ALL USER DETAILS ---
     @Transactional(readOnly = true)
     fun getAllUserDetails(): List<UserResponse> {
         val accounts = accountRepository.findAll()

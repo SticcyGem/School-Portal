@@ -13,6 +13,31 @@ interface AccountRepository : JpaRepository<Account, UUID> {
     fun findByEmail(email: String): Account?
     fun existsByEmail(email: String): Boolean
 
+    @Query("""
+        SELECT DISTINCT a FROM Account a 
+        LEFT JOIN FETCH a.profile p 
+        LEFT JOIN FETCH a.student s 
+        LEFT JOIN FETCH a.professor prof 
+        WHERE
+           LOWER(a.email) LIKE LOWER(CONCAT('%', :query, '%')) 
+           OR CAST(a.status AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+
+           OR LOWER(p.firstName) LIKE LOWER(CONCAT('%', :query, '%')) 
+           OR LOWER(p.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+           OR LOWER(CONCAT(p.firstName, ' ', p.lastName)) LIKE LOWER(CONCAT('%', :query, '%'))
+
+           OR CAST(s.studentNo AS string) LIKE :query
+           OR CAST(s.yearLevel AS string) LIKE :query
+           OR CAST(s.studentStatus AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+           OR CAST(s.studentType AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+           OR CAST(s.educationLevel AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+
+           OR LOWER(prof.professorId) LIKE LOWER(CONCAT('%', :query, '%'))
+           OR CAST(prof.professorStatus AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+           OR CAST(prof.employeeType AS string) LIKE UPPER(CONCAT('%', :query, '%'))
+    """)
+    fun searchAccounts(query: String): List<Account>
+
     @Modifying
     @Transactional
     @Query(

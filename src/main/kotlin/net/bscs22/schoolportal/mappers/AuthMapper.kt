@@ -25,10 +25,9 @@ interface AuthMapper {
     @Mapping(target = "accountId", expression = "java(UUID.randomUUID())")
     @Mapping(target = "status", constant = "ACTIVE")
     @Mapping(target = "authProvider", constant = "LOCAL")
-    @Mapping(target = "profile", ignore = true) // Ensures no link
-    @Mapping(target = "roles", expression = "java(new HashSet())")
+    @Mapping(target = "profile", ignore = true)
+    @Mapping(target = "roles", expression = "java(new HashSet<>())")
     fun toAccount(req: RegisterStudentRequest): Account
-
     fun toUserProfile(req: RegisterStudentRequest): UserProfile
     fun toStudent(req: RegisterStudentRequest): Student
 
@@ -37,10 +36,9 @@ interface AuthMapper {
     @Mapping(target = "accountId", expression = "java(UUID.randomUUID())")
     @Mapping(target = "status", constant = "ACTIVE")
     @Mapping(target = "authProvider", constant = "LOCAL")
-    @Mapping(target = "profile", ignore = true) // Ensures no link
-    @Mapping(target = "roles", expression = "java(new HashSet())")
+    @Mapping(target = "profile", ignore = true)
+    @Mapping(target = "roles", expression = "java(new HashSet<>())")
     fun toAccount(req: RegisterProfessorRequest): Account
-
     fun toUserProfile(req: RegisterProfessorRequest): UserProfile
     fun toProfessor(req: RegisterProfessorRequest): Professor
 
@@ -49,9 +47,8 @@ interface AuthMapper {
     @Mapping(target = "accountId", expression = "java(UUID.randomUUID())")
     @Mapping(target = "status", constant = "ACTIVE")
     @Mapping(target = "authProvider", constant = "LOCAL")
-    @Mapping(target = "profile", ignore = true) // Ensures no link
-    @Mapping(target = "roles", expression = "java(new HashSet())")
+    @Mapping(target = "profile", ignore = true)
+    @Mapping(target = "roles", expression = "java(new HashSet<>())")
     fun toAccount(req: RegisterAdminRequest): Account
-
     fun toUserProfile(req: RegisterAdminRequest): UserProfile
 }

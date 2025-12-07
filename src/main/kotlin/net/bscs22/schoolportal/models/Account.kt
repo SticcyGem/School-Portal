@@ -43,6 +43,12 @@ class Account(
     @OneToOne(mappedBy = "account", cascade = [CascadeType.REMOVE, CascadeType.REFRESH])
     var profile: UserProfile? = null
 
+    @OneToOne(mappedBy = "account")
+    var student: Student? = null
+
+    @OneToOne(mappedBy = "account")
+    var professor: Professor? = null
+
     @Transient
     private var isNewEntry: Boolean = true
 

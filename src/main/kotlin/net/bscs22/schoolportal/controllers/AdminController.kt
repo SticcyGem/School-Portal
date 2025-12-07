@@ -1,16 +1,19 @@
 package net.bscs22.schoolportal.controllers
 
-import net.bscs22.schoolportal.dtos.auth.*
-import net.bscs22.schoolportal.dtos.subject.*
-import net.bscs22.schoolportal.dtos.user.*
+import net.bscs22.schoolportal.dtos.auth.RegisterAdminRequest
+import net.bscs22.schoolportal.dtos.auth.RegisterProfessorRequest
+import net.bscs22.schoolportal.dtos.auth.RegisterStudentRequest
+import net.bscs22.schoolportal.dtos.subject.CreateSubjectRequest
+import net.bscs22.schoolportal.dtos.subject.UpdateSubjectRequest
+import net.bscs22.schoolportal.dtos.user.UpdateUserRequest
+import net.bscs22.schoolportal.dtos.user.UserResponse
 import net.bscs22.schoolportal.services.AccountService
 import net.bscs22.schoolportal.services.AuthService
-import net.bscs22.schoolportal.services.EnrollmentService
 import net.bscs22.schoolportal.services.SubjectService
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.util.UUID
+import java.util.*
 
 @RestController
 @RequestMapping("/api/admin")
@@ -19,6 +22,14 @@ class AdminController(
     private val accountService: AccountService,
     private val subjectService: SubjectService
 ) {
+
+    // --- SEARCH ENDPOINT ---
+
+    @GetMapping("/users/search")
+    fun searchUsers(@RequestParam("q") query: String): ResponseEntity<List<UserResponse>> {
+        val results = accountService.searchUsers(query)
+        return ResponseEntity.ok(results)
+    }
 
     // --- REGISTER ENDPOINTS ---
 

@@ -1,7 +1,6 @@
 package net.bscs22.schoolportal.services
 
 import net.bscs22.schoolportal.dtos.enrollment.EnrollmentOfferingResponse
-import net.bscs22.schoolportal.dtos.enrollment.SectionOfferingResponse
 import net.bscs22.schoolportal.mappers.EnrollmentMapper
 import net.bscs22.schoolportal.models.*
 import net.bscs22.schoolportal.models.enums.EnrollmentStatus
