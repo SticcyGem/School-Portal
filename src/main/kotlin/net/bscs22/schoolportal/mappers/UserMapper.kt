@@ -2,8 +2,8 @@ package net.bscs22.schoolportal.mappers
 
 import net.bscs22.schoolportal.dtos.user.UpdateUserRequest
 import net.bscs22.schoolportal.dtos.user.UserResponse
-import net.bscs22.schoolportal.models.Account
-import net.bscs22.schoolportal.models.UserProfile
+import net.bscs22.schoolportal.entities.accounts.Account
+import net.bscs22.schoolportal.entities.accounts.UserProfile
 import org.mapstruct.*
 
 @Mapper(

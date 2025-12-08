@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.times
+package net.bscs22.schoolportal.entities.times
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -11,9 +11,9 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import net.bscs22.schoolportal.models.Section
-import net.bscs22.schoolportal.models.enums.DayName
-import net.bscs22.schoolportal.models.locations.Room
+import net.bscs22.schoolportal.entities.academics.Section
+import net.bscs22.schoolportal.entities.commons.enums.DayName
+import net.bscs22.schoolportal.entities.locations.Room
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalTime

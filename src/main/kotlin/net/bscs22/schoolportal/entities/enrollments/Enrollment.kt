@@ -1,9 +1,9 @@
-package net.bscs22.schoolportal.models.enrollments
+package net.bscs22.schoolportal.entities.enrollments
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.accounts.Account
-import net.bscs22.schoolportal.models.enums.EnrollmentStatus
-import net.bscs22.schoolportal.models.times.AcademicTerm
+import net.bscs22.schoolportal.entities.accounts.Account
+import net.bscs22.schoolportal.entities.commons.enums.EnrollmentStatus
+import net.bscs22.schoolportal.entities.times.AcademicTerm
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.OffsetDateTime

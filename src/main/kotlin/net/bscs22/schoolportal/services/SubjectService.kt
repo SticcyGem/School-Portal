@@ -1,6 +1,6 @@
 package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.models.Subject
+import net.bscs22.schoolportal.entities.academics.Subject
 import net.bscs22.schoolportal.repositories.SubjectRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +15,7 @@ class SubjectService(
         return subjectRepository.findAll()
     }
 
-    // 2. CREATE (Now accepts individual fields)
+    // 2. CREATE
     @Transactional
     fun createSubject(
         subjectCode: String,
@@ -23,9 +23,9 @@ class SubjectService(
         lecUnits: Int,
         labUnits: Int
     ): Subject {
-        if (subjectRepository.existsById(subjectCode)) {
+        /*if (subjectRepository.existsById(subjectCode)) {
             throw IllegalArgumentException("Subject code '$subjectCode' already exists.")
-        }
+        }*/
 
         val newSubject = Subject(
             subjectCode = subjectCode,

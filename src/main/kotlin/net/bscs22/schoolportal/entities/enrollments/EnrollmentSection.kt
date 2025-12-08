@@ -1,8 +1,8 @@
-package net.bscs22.schoolportal.models.enrollments
+package net.bscs22.schoolportal.entities.enrollments
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.Section
-import net.bscs22.schoolportal.models.enums.SubjectStatus
+import net.bscs22.schoolportal.entities.academics.Section
+import net.bscs22.schoolportal.entities.commons.enums.SubjectStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 

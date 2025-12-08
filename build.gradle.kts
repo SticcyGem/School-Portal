@@ -5,6 +5,7 @@ plugins {
     kotlin("kapt") version "1.9.25"
     id("org.springframework.boot") version "3.5.7"
     id("io.spring.dependency-management") version "1.1.7"
+    id("org.graalvm.buildtools.native") version "0.9.28"
 }
 
 group = "net.bscs22"
@@ -48,6 +49,17 @@ kapt {
     arguments {
         arg("mapstruct.defaultComponentModel", "spring")
         arg("mapstruct.unmappedTargetPolicy", "ERROR")
+    }
+}
+
+graalvmNative {
+    binaries {
+        named("main") {
+            buildArgs.add("--allow-incomplete-classpath")
+            buildArgs.add("--report-unsupported-elements-at-runtime")
+            buildArgs.add("--initialize-at-build-time=org.slf4j.LoggerFactory")
+            buildArgs.add("--initialize-at-build-time=ch.qos.logback")
+        }
     }
 }
 

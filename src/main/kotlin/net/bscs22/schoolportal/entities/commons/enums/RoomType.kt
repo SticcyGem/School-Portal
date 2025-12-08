@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.enums
+package net.bscs22.schoolportal.entities.commons.enums
 
 enum class RoomType {
     CLASSROOM,

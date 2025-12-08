@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.keys
+package net.bscs22.schoolportal.entities.commons.keys
 
 import java.io.Serializable
 

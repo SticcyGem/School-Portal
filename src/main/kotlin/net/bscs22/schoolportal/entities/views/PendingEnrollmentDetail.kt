@@ -1,7 +1,7 @@
-package net.bscs22.schoolportal.models.views
+package net.bscs22.schoolportal.entities.views
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.keys.PendingEnrollmentKey
+import net.bscs22.schoolportal.entities.commons.keys.PendingEnrollmentKey
 import org.hibernate.annotations.Immutable
 import java.util.UUID
 

@@ -1,9 +1,10 @@
 package net.bscs22.schoolportal.controllers
 
+import net.bscs22.schoolportal.common.ApiResponse
+import net.bscs22.schoolportal.configs.annotations.CurrentUser
 import net.bscs22.schoolportal.dtos.enrollment.EnrollmentOfferingResponse
 import net.bscs22.schoolportal.dtos.enrollment.SubmitEnrollmentRequest
 import net.bscs22.schoolportal.services.EnrollmentService
-import net.bscs22.schoolportal.services.JwtService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.util.UUID
@@ -11,39 +12,21 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/enrollment")
 class EnrollmentController(
-    private val enrollmentService: EnrollmentService,
-    private val jwtService: JwtService
+    private val enrollmentService: EnrollmentService
 ) {
 
     @GetMapping("/options")
-    fun getOptions(@RequestHeader("Authorization") tokenHeader: String): ResponseEntity<Any> {
-        return try {
-            val accountId = extractAccountId(tokenHeader)
-            val response: EnrollmentOfferingResponse = enrollmentService.getEnrollmentOptions(accountId)
-            ResponseEntity.ok(response)
-        } catch (e: Exception) {
-            ResponseEntity.badRequest().body(mapOf("error" to e.message))
-        }
+    fun getOptions(@CurrentUser accountId: UUID): ResponseEntity<ApiResponse<EnrollmentOfferingResponse>> {
+        val response = enrollmentService.getEnrollmentOptions(accountId)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @PostMapping("/submit")
     fun submitEnrollment(
-        @RequestHeader("Authorization") tokenHeader: String,
+        @CurrentUser accountId: UUID,
         @RequestBody request: SubmitEnrollmentRequest
-    ): ResponseEntity<Any> {
-        return try {
-            val accountId = extractAccountId(tokenHeader)
-            val msg = enrollmentService.submitEnrollment(accountId, request.sectionId)
-            ResponseEntity.ok(mapOf("message" to msg))
-        } catch (e: Exception) {
-            ResponseEntity.badRequest().body(mapOf("error" to e.message))
-        }
-    }
-
-    private fun extractAccountId(header: String): UUID {
-        if (!header.startsWith("Bearer ")) throw IllegalArgumentException("Invalid Token Format")
-        val token = header.substring(7)
-        val idStr = jwtService.extractClaim(token) { it["accountId"] as String }
-        return UUID.fromString(idStr)
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val msg = enrollmentService.submitEnrollment(accountId, request.sectionId)
+        return ResponseEntity.ok(ApiResponse.success(msg))
     }
 }

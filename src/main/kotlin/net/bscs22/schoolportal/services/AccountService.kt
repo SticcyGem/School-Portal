@@ -70,11 +70,11 @@ class AccountService(
         val account = accountRepository.findById(targetAccountId)
             .orElseThrow { IllegalArgumentException("Account not found") }
 
-        if (req.email != null && req.email != account.email) {
+        /*if (req.email != null && req.email != account.email) {
             if (accountRepository.existsByEmail(req.email)) {
                 throw IllegalArgumentException("Email already in use")
             }
-        }
+        }*/
 
         userMapper.updateAccount(req, account)
         accountRepository.save(account)

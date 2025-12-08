@@ -15,6 +15,9 @@ data class EnrollmentOfferingResponse(
     @field:JsonProperty("enrollment_status")
     val enrollmentStatus: String,
 
+    @field:JsonProperty("remarks")
     val remarks: String?,
+
+    @field:JsonProperty("sections")
     val sections: List<SectionOfferingResponse>
 )

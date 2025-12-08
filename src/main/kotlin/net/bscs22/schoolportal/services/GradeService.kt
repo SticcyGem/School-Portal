@@ -1,7 +1,8 @@
 package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.controllers.GradeController
-import net.bscs22.schoolportal.models.*
+import net.bscs22.schoolportal.dtos.grading.*
+import net.bscs22.schoolportal.entities.grades.Grade
+import net.bscs22.schoolportal.entities.grades.GradeComponent
 import net.bscs22.schoolportal.repositories.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ class GradeService(
     // =========================================================================
 
     @Transactional
-    fun configureGradingScheme(sectionId: Long, requests: List<GradeController.ComponentRequest>): String {
+    fun configureGradingScheme(sectionId: Long, requests: List<ComponentRequest>): String {
         val section = sectionRepository.findById(sectionId)
             .orElseThrow { IllegalArgumentException("Section not found") }
 
@@ -33,16 +34,12 @@ class GradeService(
         // 2. Clear existing
         val existing = gradeComponentRepository.findBySection_SectionNoOrderByGcNoAsc(sectionId)
         gradeComponentRepository.deleteAll(existing)
-        // CRITICAL FIX: Flush changes immediately so the DB trigger sees the table as empty
-        // before we start inserting new rows. Without this, the trigger sees (Old + New) > 100%.
         gradeComponentRepository.flush()
 
         // 3. Build new Hierarchy
         for (parentReq in requests) {
-            // Calculate Parent Max Score by summing children
             val parentMax = parentReq.children.sumOf { it.maxScore }
 
-            // Safety Check: Parent cannot have 0 max score if it has children
             if (parentMax <= 0 && parentReq.children.isNotEmpty()) {
                 throw IllegalArgumentException("Parent component ${parentReq.name} must have a total score > 0")
             }
@@ -50,24 +47,22 @@ class GradeService(
             val parent = GradeComponent(
                 gcName = parentReq.name,
                 percent = parentReq.weightPercent,
-                maxScore = parentMax,
+                maxScore = if (parentMax > 0) parentMax else 0,
                 section = section,
                 parentGc = null
             )
             val savedParent = gradeComponentRepository.save(parent)
 
             for (childReq in parentReq.children) {
-                // FIX: Calculate Relative Percentage (Child Score / Parent Total * 100)
-                // This satisfies the DB constraint 'percent > 0'
-                val relativePercent = if (parentMax > 0) {
-                    ((childReq.maxScore.toDouble() / parentMax.toDouble()) * 100).toLong()
+                val globalWeight = if (parentMax > 0) {
+                    ((childReq.maxScore.toDouble() / parentMax.toDouble()) * parentReq.weightPercent.toDouble()).toLong()
                 } else {
                     0
                 }
 
                 val child = GradeComponent(
                     gcName = childReq.name,
-                    percent = relativePercent, // Now passes (e.g., 50%) instead of 0
+                    percent = globalWeight,
                     maxScore = childReq.maxScore,
                     section = section,
                     parentGc = savedParent
@@ -84,13 +79,13 @@ class GradeService(
     // =========================================================================
 
     @Transactional(readOnly = true)
-    fun getGradeSheet(sectionId: Long): GradeController.GradeSheetResponse {
+    fun getGradeSheet(sectionId: Long): GradeSheetResponse {
         // 1. Headers
         val allComponents = gradeComponentRepository.findBySection_SectionNoOrderByGcNoAsc(sectionId)
         val leafComponents = allComponents.filter { it.parentGc != null }
 
         val headers = leafComponents.map {
-            GradeController.HeaderDTO(it.gcNo!!, it.gcName, it.maxScore, it.parentGc?.gcName)
+            HeaderResponse(it.gcNo!!, it.gcName, it.maxScore, it.parentGc?.gcName)
         }
 
         // 2. Data (View)
@@ -105,7 +100,7 @@ class GradeService(
                 .filter { it.componentId != null && it.rawScore != null }
                 .associate { it.componentId!! to it.rawScore!! }
 
-            GradeController.StudentRowDTO(
+            StudentRowResponse(
                 enrollmentId = enrollmentId,
                 studentName = studentInfo.studentName,
                 studentId = displayId,
@@ -113,7 +108,7 @@ class GradeService(
             )
         }
 
-        return GradeController.GradeSheetResponse(headers, students)
+        return GradeSheetResponse(headers, students)
     }
 
     // =========================================================================
@@ -121,32 +116,27 @@ class GradeService(
     // =========================================================================
 
     @Transactional
-    fun submitGrades(submissions: List<GradeController.GradeSubmissionRequest>): String {
+    fun submitGrades(submissions: List<GradeSubmissionRequest>): String {
         if (submissions.isEmpty()) return "No grades to save."
 
-        // 1. Batch Fetch Dependencies (3 Queries total)
         val enrollmentIds = submissions.map { it.enrollmentId }.distinct()
         val componentIds = submissions.map { it.componentId }.distinct()
 
         val enrollments = enrollmentRepository.findAllById(enrollmentIds).associateBy { it.enrollmentNo }
         val components = gradeComponentRepository.findAllById(componentIds).associateBy { it.gcNo }
 
-        // Fetch all existing grades for these students to check for updates
         val existingGrades = gradeRepository.findByEnrollment_EnrollmentNoIn(enrollmentIds)
 
-        // 2. Process in Memory
         for (sub in submissions) {
             val enrollment = enrollments[sub.enrollmentId]
                 ?: throw IllegalArgumentException("Enrollment ${sub.enrollmentId} not found")
             val component = components[sub.componentId]
                 ?: throw IllegalArgumentException("Component ${sub.componentId} not found")
 
-            // Validate
             if (sub.score < 0 || sub.score > component.maxScore) {
                 throw IllegalArgumentException("Score ${sub.score} is invalid for ${component.gcName}")
             }
 
-            // Find match in the pre-fetched list
             val match = existingGrades.find {
                 it.enrollment.enrollmentNo == sub.enrollmentId &&
                         it.gradeComponent.gcNo == sub.componentId

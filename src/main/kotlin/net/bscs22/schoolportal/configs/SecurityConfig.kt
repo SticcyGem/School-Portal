@@ -1,5 +1,6 @@
 package net.bscs22.schoolportal.configs
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationProvider
@@ -16,7 +17,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 @EnableWebSecurity
 class SecurityConfig(
     private val jwtAuthFilter: JwtAuthenticationFilter,
-    private val authenticationProvider: AuthenticationProvider
+    private val authenticationProvider: AuthenticationProvider,
+    @param:Value("\${cors.allowed-origins:http://localhost:5173}") private val allowedOrigins: String
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -27,19 +29,26 @@ class SecurityConfig(
                 it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             }
             .authorizeHttpRequests { auth ->
-                // Public Access
-                auth.requestMatchers("/api/auth/**").permitAll()
-                auth.requestMatchers("/api/test/public").permitAll()
-
-                // Admin Access
-                auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
-
+                // PUBLIC ENDPOINTS
                 auth.requestMatchers(
-                    "/", "/index.html", "/static/**", "/css/**",
-                    "/js/**", "/images/**", "/assets/**", "/favicon.ico"
+                    "/api/auth/**",
+                    "/api/test/public"
                 ).permitAll()
 
-                // Secured Access
+                // STATIC
+                auth.requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/static/**",
+                    "/css/**",
+                    "/js/**",
+                    "/images/**",
+                    "/assets/**",
+                    "/favicon.ico"
+                ).permitAll()
+
+                // Admin & Secured
+                auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                 auth.anyRequest().authenticated()
             }
             .authenticationProvider(authenticationProvider)
@@ -52,12 +61,7 @@ class SecurityConfig(
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
 
-        configuration.allowedOriginPatterns = listOf(
-            "http://localhost:[*]",             // Matches localhost:4321, localhost:3000, etc.
-            "http://emmanuel-laptop.local:[*]", // Matches your hostname
-            "http://10.182.*:[*]"               // Matches your Hotspot IP range (10.182.x.x)
-        )
-
+        configuration.allowedOriginPatterns = allowedOrigins.split(",").map { it.trim() }
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true

@@ -1,7 +1,7 @@
 package net.bscs22.schoolportal.dtos.user
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import net.bscs22.schoolportal.models.enums.AccountStatus
+import net.bscs22.schoolportal.entities.commons.enums.AccountStatus
 import java.util.UUID
 
 data class UserResponse(

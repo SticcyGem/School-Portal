@@ -1,7 +1,7 @@
-package net.bscs22.schoolportal.models.grades
+package net.bscs22.schoolportal.entities.grades
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.Section
+import net.bscs22.schoolportal.entities.academics.Section
 
 @Entity
 @Table(name = "grade_components", schema = "school")

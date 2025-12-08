@@ -1,6 +1,6 @@
 package net.bscs22.schoolportal.repositories
 
-import net.bscs22.schoolportal.models.Grade
+import net.bscs22.schoolportal.entities.grades.Grade
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

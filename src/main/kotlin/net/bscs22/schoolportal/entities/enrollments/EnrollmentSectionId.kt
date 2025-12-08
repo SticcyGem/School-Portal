@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.enrollments
+package net.bscs22.schoolportal.entities.enrollments
 
 import jakarta.persistence.Column
 import jakarta.persistence.Embeddable

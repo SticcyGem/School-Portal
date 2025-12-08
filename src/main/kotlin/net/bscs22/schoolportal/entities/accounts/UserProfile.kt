@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.accounts
+package net.bscs22.schoolportal.entities.accounts
 
 import jakarta.persistence.*
 import org.springframework.data.domain.Persistable

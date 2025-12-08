@@ -1,7 +1,7 @@
-package net.bscs22.schoolportal.models
+package net.bscs22.schoolportal.entities.academics
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.keys.SectionBlockKey
+import net.bscs22.schoolportal.entities.commons.keys.SectionBlockKey
 
 @Entity
 @Table(name = "section_blocks", schema = "school")

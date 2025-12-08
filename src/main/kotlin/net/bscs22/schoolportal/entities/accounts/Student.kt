@@ -1,11 +1,11 @@
-package net.bscs22.schoolportal.models.accounts
+package net.bscs22.schoolportal.entities.accounts
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.Block
-import net.bscs22.schoolportal.models.Course
-import net.bscs22.schoolportal.models.enums.EducationLevel
-import net.bscs22.schoolportal.models.enums.StudentStatus
-import net.bscs22.schoolportal.models.enums.StudentType
+import net.bscs22.schoolportal.entities.academics.Block
+import net.bscs22.schoolportal.entities.academics.Course
+import net.bscs22.schoolportal.entities.commons.enums.EducationLevel
+import net.bscs22.schoolportal.entities.commons.enums.StudentStatus
+import net.bscs22.schoolportal.entities.commons.enums.StudentType
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.springframework.data.domain.Persistable

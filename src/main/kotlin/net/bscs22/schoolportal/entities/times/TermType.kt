@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.times
+package net.bscs22.schoolportal.entities.times
 
 import jakarta.persistence.*
 

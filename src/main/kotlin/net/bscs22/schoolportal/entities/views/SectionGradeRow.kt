@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.views
+package net.bscs22.schoolportal.entities.views
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

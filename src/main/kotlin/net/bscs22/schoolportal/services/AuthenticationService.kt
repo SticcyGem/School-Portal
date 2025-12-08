@@ -1,39 +1,41 @@
 package net.bscs22.schoolportal.services
 
-import net.bscs22.schoolportal.dtos.auth.*
-import net.bscs22.schoolportal.mappers.AuthMapper
-import net.bscs22.schoolportal.models.Account
-import net.bscs22.schoolportal.models.UserProfile
-import net.bscs22.schoolportal.repositories.*
+import net.bscs22.schoolportal.dtos.auth.AuthResponse
+import net.bscs22.schoolportal.dtos.auth.LoginRequest
+import net.bscs22.schoolportal.repositories.AccountRepository
+import net.bscs22.schoolportal.repositories.ProfessorDetailRepository
+import net.bscs22.schoolportal.repositories.StudentDetailRepository
+import net.bscs22.schoolportal.repositories.UserProfileRepository
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class AuthService(
+class AuthenticationService(
     private val accountRepository: AccountRepository,
-    private val userProfileRepository: UserProfileRepository,
-    private val studentRepository: StudentRepository,
-    private val professorRepository: ProfessorRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
     private val studentDetailRepository: StudentDetailRepository,
     private val professorDetailRepository: ProfessorDetailRepository,
-    private val authMapper: AuthMapper
+    private val userProfileRepository: UserProfileRepository
 ) {
 
-    // --- LOGIN ---
-    fun authenticate(req: LoginRequest): AuthResponse? {
-        val account = accountRepository.findByEmail(req.email) ?: return null
+    @Transactional(readOnly = true)
+    fun authenticate(req: LoginRequest): AuthResponse {
+        val account = accountRepository.findByEmail(req.email)
+            ?: throw BadCredentialsException("Invalid credentials") // Use specific exception
 
         if (!passwordEncoder.matches(req.password, account.passwordHash)) {
-            return null
+            throw BadCredentialsException("Invalid credentials")
         }
 
+        // Determine primary role for Token claims (simplified logic)
         val roleName = account.roles.firstOrNull()?.roleName ?: "USER"
         val token = jwtService.generateToken(account.email, account.accountId, roleName)
         val roles = account.roles.map { it.roleName }
 
+        // Fetch View-Specific Profile Data
         val profileData: Any? = when {
             roles.contains("STUDENT") -> studentDetailRepository.findById(account.accountId).orElse(null)
             roles.contains("PROFESSOR") -> professorDetailRepository.findById(account.accountId).orElse(null)
@@ -47,92 +49,5 @@ class AuthService(
         }
 
         return AuthResponse(token, roles, account.accountId, profileData)
-    }
-
-    // --- REGISTER STUDENT ---
-    @Transactional
-    fun registerStudent(req: RegisterStudentRequest): String {
-        if (req.studentNo != null && studentRepository.existsByStudentNo(req.studentNo)) {
-            throw IllegalArgumentException("Student No already in use")
-        }
-
-        val account = authMapper.toAccount(req)
-
-        val savedAccount = createBaseAccount(
-            account = account,
-            profile = authMapper.toUserProfile(req),
-            rawPassword = req.password,
-            roleId = 1L
-        )
-
-        val student = authMapper.toStudent(req)
-        student.account = savedAccount
-        student.accountId = savedAccount.accountId
-        studentRepository.save(student)
-
-        return "Student created: ${req.studentNo ?: "ID Pending"}"
-    }
-
-    // --- REGISTER PROFESSOR ---
-    @Transactional
-    fun registerProfessor(req: RegisterProfessorRequest): String {
-        if (req.professorId != null && professorRepository.existsByProfessorId(req.professorId)) {
-            throw IllegalArgumentException("Professor ID exists")
-        }
-
-        val account = authMapper.toAccount(req)
-
-        val savedAccount = createBaseAccount(
-            account = account,
-            profile = authMapper.toUserProfile(req),
-            rawPassword = req.password,
-            roleId = 2L
-        )
-
-        val professor = authMapper.toProfessor(req)
-        professor.account = savedAccount
-        professor.accountId = savedAccount.accountId
-        professorRepository.save(professor)
-
-        return "Professor created: ${req.professorId ?: "ID Pending"}"
-    }
-
-    // --- REGISTER ADMIN ---
-    @Transactional
-    fun registerAdmin(req: RegisterAdminRequest): String {
-        val account = authMapper.toAccount(req)
-
-        createBaseAccount(
-            account = account,
-            profile = authMapper.toUserProfile(req),
-            rawPassword = req.password,
-            roleId = 3L
-        )
-
-        return "Admin created: ${req.email}"
-    }
-
-    // --- PRIVATE HELPER ---
-    private fun createBaseAccount(
-        account: Account,
-        profile: UserProfile,
-        rawPassword: String,
-        roleId: Long
-    ): Account {
-        if (accountRepository.existsByEmail(account.email)) {
-            throw IllegalArgumentException("Email already in use")
-        }
-
-        account.passwordHash = passwordEncoder.encode(rawPassword)
-
-        val savedAccount = accountRepository.save(account)
-
-        profile.account = savedAccount
-        profile.accountId = savedAccount.accountId
-        userProfileRepository.save(profile)
-
-        accountRepository.addRole(savedAccount.accountId, roleId)
-
-        return savedAccount
     }
 }

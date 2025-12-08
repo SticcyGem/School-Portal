@@ -1,8 +1,8 @@
-package net.bscs22.schoolportal.models.accounts
+package net.bscs22.schoolportal.entities.accounts
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.enums.AccountStatus
-import net.bscs22.schoolportal.models.enums.AuthProvider
+import net.bscs22.schoolportal.entities.commons.enums.AccountStatus
+import net.bscs22.schoolportal.entities.commons.enums.AuthProvider
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.springframework.data.domain.Persistable

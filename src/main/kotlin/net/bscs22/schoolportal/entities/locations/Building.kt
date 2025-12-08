@@ -1,4 +1,4 @@
-package net.bscs22.schoolportal.models.locations
+package net.bscs22.schoolportal.entities.locations
 
 import jakarta.persistence.*
 

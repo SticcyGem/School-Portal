@@ -3,10 +3,10 @@ package net.bscs22.schoolportal.mappers
 import net.bscs22.schoolportal.dtos.auth.RegisterAdminRequest
 import net.bscs22.schoolportal.dtos.auth.RegisterProfessorRequest
 import net.bscs22.schoolportal.dtos.auth.RegisterStudentRequest
-import net.bscs22.schoolportal.models.Account
-import net.bscs22.schoolportal.models.Professor
-import net.bscs22.schoolportal.models.Student
-import net.bscs22.schoolportal.models.UserProfile
+import net.bscs22.schoolportal.entities.accounts.Account
+import net.bscs22.schoolportal.entities.accounts.Professor
+import net.bscs22.schoolportal.entities.accounts.Student
+import net.bscs22.schoolportal.entities.accounts.UserProfile
 import org.mapstruct.Mapper
 import org.mapstruct.Mapping
 import org.mapstruct.ReportingPolicy

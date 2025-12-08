@@ -1,8 +1,8 @@
-package net.bscs22.schoolportal.models.grades
+package net.bscs22.schoolportal.entities.grades
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.enrollments.Enrollment
-import net.bscs22.schoolportal.models.keys.GradeKey
+import net.bscs22.schoolportal.entities.enrollments.Enrollment
+import net.bscs22.schoolportal.entities.commons.keys.GradeKey
 
 @Entity
 @Table(name = "grades", schema = "school")

@@ -1,8 +1,8 @@
-package net.bscs22.schoolportal.models.accounts
+package net.bscs22.schoolportal.entities.accounts
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.enums.EmployeeType
-import net.bscs22.schoolportal.models.enums.ProfessorStatus
+import net.bscs22.schoolportal.entities.commons.enums.EmployeeType
+import net.bscs22.schoolportal.entities.commons.enums.ProfessorStatus
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.springframework.data.domain.Persistable

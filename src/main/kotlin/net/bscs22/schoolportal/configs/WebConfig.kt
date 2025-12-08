@@ -1,4 +1,13 @@
 package net.bscs22.schoolportal.configs
 
-class WebConfig {
+import net.bscs22.schoolportal.configs.resolvers.CurrentUserArgumentResolver
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.method.support.HandlerMethodArgumentResolver
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+
+@Configuration
+class WebConfig : WebMvcConfigurer {
+    override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
+        resolvers.add(CurrentUserArgumentResolver())
+    }
 }

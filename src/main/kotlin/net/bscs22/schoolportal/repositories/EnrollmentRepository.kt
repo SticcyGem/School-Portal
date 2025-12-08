@@ -1,7 +1,7 @@
 package net.bscs22.schoolportal.repositories
 
-import net.bscs22.schoolportal.models.Enrollment
-import net.bscs22.schoolportal.models.enums.EnrollmentStatus
+import net.bscs22.schoolportal.entities.enrollments.Enrollment
+import net.bscs22.schoolportal.entities.commons.enums.EnrollmentStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository

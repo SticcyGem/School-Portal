@@ -1,10 +1,10 @@
-package net.bscs22.schoolportal.models
+package net.bscs22.schoolportal.entities.academics
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.accounts.Professor
-import net.bscs22.schoolportal.models.enums.DeliveryMode // Import the new Enum
-import net.bscs22.schoolportal.models.times.AcademicTerm
-import net.bscs22.schoolportal.models.times.Schedule
+import net.bscs22.schoolportal.entities.accounts.Professor
+import net.bscs22.schoolportal.entities.commons.enums.DeliveryMode // Import the new Enum
+import net.bscs22.schoolportal.entities.times.AcademicTerm
+import net.bscs22.schoolportal.entities.times.Schedule
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 

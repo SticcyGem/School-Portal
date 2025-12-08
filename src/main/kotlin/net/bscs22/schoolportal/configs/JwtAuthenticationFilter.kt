@@ -29,8 +29,6 @@ class JwtAuthenticationFilter (
     ) {
         val authHeader = request.getHeader("Authorization")
 
-        // Removed unused 'val path = request.servletPath' to fix warning
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response)
             return

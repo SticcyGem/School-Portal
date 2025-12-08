@@ -1,7 +1,7 @@
-package net.bscs22.schoolportal.models.locations
+package net.bscs22.schoolportal.entities.locations
 
 import jakarta.persistence.*
-import net.bscs22.schoolportal.models.enums.RoomType
+import net.bscs22.schoolportal.entities.commons.enums.RoomType
 
 @Entity
 @Table(name = "rooms", schema = "school")

@@ -1,10 +1,10 @@
 package net.bscs22.schoolportal.mappers
 
 import net.bscs22.schoolportal.dtos.enrollment.SectionOfferingResponse
-import net.bscs22.schoolportal.services.EnrollmentService.SectionApprovalDTO
-import net.bscs22.schoolportal.models.Section
-import net.bscs22.schoolportal.models.enums.SectionStatus
-import net.bscs22.schoolportal.models.views.PendingEnrollmentDetail
+import net.bscs22.schoolportal.dtos.enrollment.SectionApprovalResponse
+import net.bscs22.schoolportal.entities.academics.Section
+import net.bscs22.schoolportal.entities.commons.enums.SectionStatus
+import net.bscs22.schoolportal.entities.views.PendingEnrollmentDetail
 import org.mapstruct.*
 
 @Mapper(
@@ -15,7 +15,7 @@ abstract class EnrollmentMapper {
     // ADMIN VIEW MAPPING
     @Mapping(target = "subjectTitle", source = "subjectName")
     @Mapping(target = "schedule", source = "fullSchedule")
-    abstract fun toSectionApprovalDTO(view: PendingEnrollmentDetail): SectionApprovalDTO
+    abstract fun toSectionApprovalResponse(view: PendingEnrollmentDetail): SectionApprovalResponse
 
     // STUDENT OFFERING MAPPING
     @Mapping(target = "sectionName", source = "section", qualifiedByName = ["formatSectionName"])
