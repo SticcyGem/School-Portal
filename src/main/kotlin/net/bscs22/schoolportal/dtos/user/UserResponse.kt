@@ -21,5 +21,23 @@ data class UserResponse(
 
     val status: AccountStatus,
 
-    val roles: List<String>
+    val roles: List<String>,
+
+    @field:JsonProperty("student_no")
+    val studentNo: Long? = null,
+
+    @field:JsonProperty("course_code")
+    val courseCode: String? = null,
+
+    @field:JsonProperty("student_type")
+    val studentType: String? = null,
+
+    @field:JsonProperty("education_level")
+    val educationLevel: String? = null,
+
+    @field:JsonProperty("professor_id")
+    val professorId: String? = null,
+
+    @field:JsonProperty("employee_type")
+    val employeeType: String? = null
 )

@@ -49,6 +49,23 @@ Authorization: Bearer {{admin_token}}
   "block_no": 2
 }
 
+### 2a. Register a NEW Irregular Student
+POST http://localhost:8080/api/admin/register/student
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "email": "eaperez2023@plm.edu.ph",
+  "password": "P@ssw0rd",
+  "first_name": "Emmanuel",
+  "middle_name": "Arriola",
+  "last_name": "Perez",
+  "education_level": "UNDERGRADUATE",
+  "student_type": "IRREGULAR",
+  "course_code": "BSCS",
+  "block_no": 2
+}
+
 ### 2b. Register a NEW Professor
 POST http://localhost:8080/api/admin/register/professor
 Content-Type: application/json
@@ -80,7 +97,7 @@ Authorization: Bearer {{admin_token}}
 }
 
 ### 2d. Search for User & Capture ID (For Update Test)
-GET http://localhost:8080/api/admin/users/search?q=fresh_student_v8@plm.edu.ph
+GET http://localhost:8080/api/admin/users/search?q=fresh_student_v5@plm.edu.ph
 Authorization: Bearer {{admin_token}}
 
 > {%
@@ -144,7 +161,7 @@ POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "fresh_student_v8@plm.edu.ph",
+  "email": "fresh_student_v5@plm.edu.ph",
   "password": "password123"
 }
 > {%
@@ -315,3 +332,27 @@ Authorization: Bearer {{admin_token}}
 {
   "reason": "Conflicts with prerequisites. Please advise with your chairperson."
 }
+
+### 1. Authenticate (Optional - if you need a fresh token)
+# Replace with valid admin credentials
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@plm.edu.ph",
+  "password": "P@ssw0rd"
+}
+
+> {%
+    client.global.set("auth_token", response.body.data.token);
+%}
+
+### 2. Get All Blocks (Check 'course' field)
+GET http://localhost:8080/api/admin/blocks
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+### 3. Get All Courses (For reference)
+GET http://localhost:8080/api/admin/courses
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json

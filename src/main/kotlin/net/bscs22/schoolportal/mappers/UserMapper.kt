@@ -18,6 +18,16 @@ abstract class UserMapper {
     @Mapping(source = "profile.firstName", target = "firstName")
     @Mapping(source = "profile.lastName", target = "lastName")
     @Mapping(target = "roles", expression = "java(mapRoles(account))")
+
+    // Student Fields
+    @Mapping(source = "account.student.studentNo", target = "studentNo")
+    @Mapping(source = "account.student.courseCode", target = "courseCode")
+    @Mapping(source = "account.student.studentType", target = "studentType")
+    @Mapping(source = "account.student.educationLevel", target = "educationLevel")
+
+    // Professor Fields
+    @Mapping(source = "account.professor.professorId", target = "professorId")
+    @Mapping(source = "account.professor.employeeType", target = "employeeType")
     abstract fun toUserResponse(account: Account, profile: UserProfile): UserResponse
 
     // HELPER FUNCTIONS

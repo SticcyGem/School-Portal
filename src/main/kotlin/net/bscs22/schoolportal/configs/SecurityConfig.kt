@@ -47,7 +47,7 @@ class SecurityConfig(
                     "/favicon.ico"
                 ).permitAll()
 
-                // Admin & Secured
+                // ADMIN AND SECURED
                 auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                 auth.anyRequest().authenticated()
             }
