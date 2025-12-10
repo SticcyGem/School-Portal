@@ -1,5 +1,6 @@
 package net.bscs22.schoolportal.configs
 
+import net.bscs22.schoolportal.configs.security.AuthenticatedUser
 import net.bscs22.schoolportal.repositories.AccountRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,17 +15,12 @@ import org.springframework.security.crypto.password.PasswordEncoder
 class ApplicationConfig(
     private val accountsRepository: AccountRepository,
 ) {
-
     @Bean
     fun userDetailsService(): UserDetailsService {
         return UserDetailsService { email ->
             val user = accountsRepository.findByEmail(email)
                 ?: throw UsernameNotFoundException("User not found")
-            org.springframework.security.core.userdetails.User
-                .withUsername(user.email)
-                .password(user.passwordHash)
-                .roles(*user.roles.map { it.roleName }.toTypedArray())
-                .build()
+            AuthenticatedUser(user)
         }
     }
 
@@ -36,7 +32,5 @@ class ApplicationConfig(
     }
 
     @Bean
-    fun passwordEncoder(): PasswordEncoder {
-        return BCryptPasswordEncoder(10)
-    }
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(10)
 }

@@ -1,0 +1,358 @@
+### 1. Login as ADMIN (Required for most setup actions)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@plm.edu.ph",
+  "password": "P@ssw0rd"
+}
+> {%
+    if (response.status === 200) {
+        client.global.set("admin_token", response.body.data.token);
+        client.log("✅ ADMIN TOKEN ACQUIRED");
+    }
+%}
+
+### Search by Email (Exact or Partial)
+GET http://localhost:8080/api/admin/users/search?q=fresh_student
+Authorization: Bearer {{admin_token}}
+
+### Search by First Name
+GET http://localhost:8080/api/admin/users/search?q=Fresh
+Authorization: Bearer {{admin_token}}
+
+### Search by Student Type (e.g., "IRREGULAR")
+GET http://localhost:8080/api/admin/users/search?q=IRREGULAR
+Authorization: Bearer {{admin_token}}
+
+### Search by Status (e.g., "ACTIVE")
+GET http://localhost:8080/api/admin/users/search?q=ACTIVE
+Authorization: Bearer {{admin_token}}
+
+### Search by Year Level (e.g., "2")
+GET http://localhost:8080/api/admin/users/search?q=2
+Authorization: Bearer {{admin_token}}
+
+### 2a. Register a NEW Irregular Student
+POST http://localhost:8080/api/admin/register/student
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "email": "fresh_student_v5@plm.edu.ph",
+  "password": "password123",
+  "first_name": "Fresh",
+  "last_name": "Student",
+  "education_level": "UNDERGRADUATE",
+  "student_type": "IRREGULAR",
+  "course_code": "BSCS",
+  "block_no": 2
+}
+
+### 2a. Register a NEW Irregular Student
+POST http://localhost:8080/api/admin/register/student
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "email": "eaperez2023@plm.edu.ph",
+  "password": "P@ssw0rd",
+  "first_name": "Emmanuel",
+  "middle_name": "Arriola",
+  "last_name": "Perez",
+  "education_level": "UNDERGRADUATE",
+  "student_type": "IRREGULAR",
+  "course_code": "BSCS",
+  "block_no": 2
+}
+
+### 2b. Register a NEW Professor
+POST http://localhost:8080/api/admin/register/professor
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "email": "professor@plm.edu.ph",
+  "password": "password123",
+  "first_name": "Proffy",
+  "middle_name": "Proof",
+  "last_name": "Pwes",
+  "employee_type": "FULL_TIME"
+}
+
+### 2c. Register "Reject Candidate" Student (For Failure Testing)
+POST http://localhost:8080/api/admin/register/student
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "email": "reject_me@plm.edu.ph",
+  "password": "password123",
+  "first_name": "Reject",
+  "last_name": "Candidate",
+  "education_level": "UNDERGRADUATE",
+  "student_type": "REGULAR",
+  "course_code": "BSCS",
+  "block_no": 1
+}
+
+### 2d. Search for User & Capture ID (For Update Test)
+GET http://localhost:8080/api/admin/users/search?q=fresh_student_v5@plm.edu.ph
+Authorization: Bearer {{admin_token}}
+
+> {%
+    const users = response.body;
+    if (users && users.length > 0) {
+        const target = users[0];
+        client.global.set("target_user_id", target.account_id);
+        client.log("✅ TARGET USER ID ACQUIRED: " + target.account_id);
+    } else {
+        client.log("❌ Could not find user via search API");
+    }
+%}
+
+### 2e. Update User Details (Admin Action)
+PUT http://localhost:8080/api/admin/users/{{target_user_id}}
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "first_name": "Fresher",
+  "status": "ACTIVE"
+}
+
+### 3a. Create a New Subject
+POST http://localhost:8080/api/admin/subjects
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "subject_code": "AI 101",
+  "subject_name": "Introduction to Artificial Intelligence",
+  "lec_units": 2,
+  "lab_units": 1
+}
+
+### 3b. Update the Subject
+PUT http://localhost:8080/api/admin/subjects/AI%20101
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "subject_name": "Intro to AI & Deep Learning",
+  "lec_units": 3,
+  "lab_units": 0
+}
+
+### 3c. Get All Subjects
+GET http://localhost:8080/api/admin/subjects
+Authorization: Bearer {{admin_token}}
+
+### 3d. Delete the Subject
+DELETE http://localhost:8080/api/admin/subjects/AI%20101
+Authorization: Bearer {{admin_token}}
+
+### 3e. Try to Delete a Used Subject (Should FAIL)
+DELETE http://localhost:8080/api/admin/subjects/CSC%200212
+Authorization: Bearer {{admin_token}}
+
+### 4a. Login as the NEW Student
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "fresh_student_v5@plm.edu.ph",
+  "password": "password123"
+}
+> {%
+    if (response.status === 200) {
+        client.global.set("student_token", response.body.data.token);
+        client.log("✅ STUDENT TOKEN ACQUIRED");
+    }
+%}
+
+### 4b. GET Enrollment Options
+GET http://localhost:8080/api/enrollment/options
+Authorization: Bearer {{student_token}}
+
+### 4c. SUBMIT Draft Enrollment
+# Note: Ensure section_ids exist in your DB
+POST http://localhost:8080/api/enrollment/submit
+Content-Type: application/json
+Authorization: Bearer {{student_token}}
+
+{
+  "section_id": [1, 2, 3]
+}
+
+### 4d. APPROVE Enrollment (Admin Action)
+# IMPORTANT: Adjust ID '2' if enrollment ID differs
+POST http://localhost:8080/api/admin/approve/2
+Authorization: Bearer {{admin_token}}
+
+### 5a. Login as Joshu (Already Enrolled)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jsramos2023@plm.edu.ph",
+  "password": "P@ssw0rd"
+}
+> {%
+    if (response.status === 200) {
+        client.global.set("joshu_token", response.body.data.token);
+        client.log("✅ JOSHU TOKEN ACQUIRED");
+    }
+%}
+
+### 5b. Try to Enroll Again (Should FAIL)
+POST http://localhost:8080/api/enrollment/submit
+Content-Type: application/json
+Authorization: Bearer {{joshu_token}}
+
+{
+  "section_id": [4, 5]
+}
+
+### 5c. Login as "Reject Candidate"
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "reject_me@plm.edu.ph",
+  "password": "password123"
+}
+> {%
+    if (response.status === 200) {
+        client.global.set("reject_token", response.body.data.token);
+        client.log("✅ REJECT TOKEN ACQUIRED");
+    }
+%}
+
+### 5d. Submit Enrollment (To be rejected)
+# Assuming this creates Enrollment ID 3
+POST http://localhost:8080/api/enrollment/submit
+Content-Type: application/json
+Authorization: Bearer {{reject_token}}
+
+{
+  "section_id": [1, 2]
+}
+
+### 5e. REJECT Enrollment (Admin Action)
+POST http://localhost:8080/api/admin/reject/3
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "reason": "Conflicts with prerequisites. Please advise with your chairperson."
+}
+
+### 5f. Verify Rejection (Student Action)
+GET http://localhost:8080/api/enrollment/options
+Authorization: Bearer {{reject_token}}
+
+### 6a. Login as PROFESSOR
+# User from data.sql: James Bonifacio
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jccbonifacio2024@plm.edu.ph",
+  "password": "P@ssw0rd"
+}
+> {%
+    if (response.status === 200) {
+        client.global.set("prof_token", response.body.data.token);
+        client.log("✅ PROFESSOR TOKEN ACQUIRED");
+    }
+%}
+
+### 6b. Configure Grading Scheme
+# Assumes Section ID 1
+POST http://localhost:8080/api/professor/grading/configure/1
+Content-Type: application/json
+Authorization: Bearer {{prof_token}}
+
+[
+  {
+    "name": "Midterm Exam",
+    "weight_percent": 40,
+    "children": [
+      { "name": "Multiple Choice", "max_score": 50 },
+      { "name": "Essay", "max_score": 50 }
+    ]
+  },
+  {
+    "name": "Final Project",
+    "weight_percent": 60,
+    "children": [
+      { "name": "Documentation", "max_score": 40 },
+      { "name": "Implementation", "max_score": 60 }
+    ]
+  }
+]
+
+### 6c. Get Grade Sheet (View)
+# Check response for Component IDs (e.g., 2, 3, 5, 6)
+GET http://localhost:8080/api/professor/grading/sheet/1
+Authorization: Bearer {{prof_token}}
+
+### 6d. Submit Grades
+# Using Enrollment ID 1 (Joshu)
+POST http://localhost:8080/api/professor/grading/submit
+Content-Type: application/json
+Authorization: Bearer {{prof_token}}
+
+[
+  { "enrollment_id": 1, "component_id": 2, "score": 45 },
+  { "enrollment_id": 1, "component_id": 3, "score": 48 }
+]
+
+### 6e. Verify Grades (View again)
+GET http://localhost:8080/api/professor/grading/sheet/1
+Authorization: Bearer {{prof_token}}
+
+### 4e. List Pending Enrollments (Verify API exists)
+GET http://localhost:8080/api/admin/enrollments/pending
+Authorization: Bearer {{admin_token}}
+
+### 4d. APPROVE Enrollment (Admin Action)
+# Ensure the ID '2' matches the enrollment created in step 4c
+POST http://localhost:8080/api/admin/approve/2
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+### 5e. REJECT Enrollment (Admin Action)
+# Ensure the ID '3' matches the enrollment created in step 5d
+POST http://localhost:8080/api/admin/reject/3
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "reason": "Conflicts with prerequisites. Please advise with your chairperson."
+}
+
+### 1. Authenticate (Optional - if you need a fresh token)
+# Replace with valid admin credentials
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@plm.edu.ph",
+  "password": "P@ssw0rd"
+}
+
+> {%
+    client.global.set("auth_token", response.body.data.token);
+%}
+
+### 2. Get All Blocks (Check 'course' field)
+GET http://localhost:8080/api/admin/blocks
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+### 3. Get All Courses (For reference)
+GET http://localhost:8080/api/admin/courses
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
