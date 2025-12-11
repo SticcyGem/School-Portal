@@ -1,3 +1,6 @@
+# Archived
+Migrated the project: https://github.com/SticcyGem/School-Portal-Cloud
+
 # School Portal - Backend Service
 
 A robust, Spring Boot-based backend system designed for the Information Management subject at Pamantasan ng Lungsod ng Maynila (PLM). This project implements a scalable School Registration System capable of handling complex enrollment scenarios, including Regular and Irregular students, dynamic scheduling, and strict data integrity.
